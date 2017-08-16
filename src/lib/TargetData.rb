@@ -22,16 +22,33 @@ class Backstores
   def analyze
     @backstores_output.each do |line|
       if @backstore_path = @re_backstore_path.match(line)
-        @backstores_list.push(@backstore_path.to_s)
+        @backstores_list.push(@backstore_path.to_s.strip)
       end
     end
-    p @backstores_list
+    #p "In backstores"
+    #p @backstores_list
   end
 
   def get_backstores_list
     return @backstores_list
   end
-  
+
+  #This function will return whether the backstore(path) already exsited
+  def validate_backstore_exist(str)
+    puts "validate_backstore_exist() is called." 
+    puts "The backstores_list is"
+    puts @backstores_list
+    @backstores_list.each do |backstore|
+      puts "in the loop"
+      puts backstore
+      puts str
+      if backstore == str
+        #found the path(str) already exsited in the backsotre list, return true if exist
+        return true
+      end
+    end
+    return false
+  end
 end
 class ACL_group
   @initiator_rules_hash_list = nil
@@ -167,7 +184,7 @@ class TargetList
 
 #This function will return a array of target names
   def get_target_names()
-    p "get_target_names() called"
+    #p "get_target_names() called"
     target_names_array = Array.new
     @target_hash_list.each do |key, value|
       target_names_array.push(key)
@@ -191,7 +208,7 @@ end
 class TargetData
 
   def initialize()
-    puts "initialize a TargetData class"
+    #puts "initialize a TargetData class"
     @re_iqn_target = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[TPGs:\s\d+\]/)
     @re_iqn_name = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w\.:\-]+/)
 
@@ -253,11 +270,11 @@ class TargetData
 
 
   def analyze()
-    puts "analyze() called.\n"
+    #puts "analyze() called.\n"
     @target_outout.each do |line|
       #handle iqn targets here.
       if @re_iqn_target.match(line)
-         puts line
+         #puts line
          if @iqn_name = @re_iqn_name.match(line) 
            #puts iqn_name
            @target_name=@iqn_name.to_s
@@ -357,12 +374,12 @@ class TargetData
 
       #handle mapped luns here
       if @re_mapped_lun_line.match(line)
-        puts line
+        #puts line
         @mapping_lun_name = @re_mapping_lun.match(line).to_s.strip
-        puts @mapping_lun_name
+        #puts @mapping_lun_name
         @mapped_lun_name = @re_mapped_lun.match(line).to_s.strip
         @mapped_lun_name.slice!("[")
-        puts @mapped_lun_name
+        #puts @mapped_lun_name
         mapping_lun_num = @mapping_lun_name[10,@mapping_lun_name.length]
         @current_acl_rule.store_mapped_lun(mapping_lun_num)
         mapped_lun_num = @mapped_lun_name[3,@mapped_lun_name.length]
@@ -380,7 +397,7 @@ class TargetData
 
  #this function will return are created target names.
   def get_target_names_array()
-    puts "get_target_names_array() called."
+    #puts "get_target_names_array() called."
     names = Array.new
     names = @targets_list.get_target_names()
     return names

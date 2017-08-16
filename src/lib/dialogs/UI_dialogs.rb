@@ -296,7 +296,7 @@ end
 class TargetsTab < ::CWM::Tab
   def initialize
     @target_table_widget = TargetsTableWidget.new
-    puts "Initialized a TargetsTab class."
+    #puts "Initialized a TargetsTab class."
     self.initial = false
   end
 
@@ -360,12 +360,12 @@ class TargetIdentifierInput < CWM::InputField
 
   def init
     self.value = @config
-    printf("Target Identifier InputField init, got default value %s.\n",@config)
+    #printf("Target Identifier InputField init, got default value %s.\n",@config)
   end
 
   def store
     @config = value
-    printf("Target Identifier Inputfield will store the value %s.\n", @config)
+    #printf("Target Identifier Inputfield will store the value %s.\n", @config)
   end
 end
 
@@ -380,12 +380,12 @@ class PortalGroupInput < CWM::IntField
 
   def init
     self.value = @config
-    printf("Target Portal Group InputField init, got default value %s.\n",@config)
+    #printf("Target Portal Group InputField init, got default value %s.\n",@config)
   end
 
   def store
     @config = value
-    printf("Target Portal Group will store the value %s.\n", @config)
+    #printf("Target Portal Group will store the value %s.\n", @config)
   end
 
   def minimum
@@ -404,12 +404,12 @@ class TargetPortNumberInput < CWM::IntField
 
   def init
     self.value = @config
-    printf("Target port number InputField init, got default value %s.\n",@config)
+    #printf("Target port number InputField init, got default value %s.\n",@config)
   end
 
   def store
     @config = value
-    printf("Target port number will store the value %s.\n", @config)
+    #printf("Target port number will store the value %s.\n", @config)
   end
 
   def minimum
@@ -434,8 +434,8 @@ class IpSelectionComboBox < CWM::ComboBox
 
   def store
     #@config.value = value
-    puts self.value
-    puts get_addr
+    #puts self.value
+    #puts get_addr
   end
   
   def GetNetConfig
@@ -454,7 +454,7 @@ class IpSelectionComboBox < CWM::ComboBox
            elsif ip_str.start_with?("fe80:")
              next
            else
-             p ip_str
+             #p ip_str
              ip_list.push(ip_str)
            end
          else
@@ -464,7 +464,7 @@ class IpSelectionComboBox < CWM::ComboBox
            if ip_str.start_with?("127.")
              next
            else
-             p ip_str
+            # p ip_str
              ip_list.push(ip_str)
            end
          end
@@ -506,9 +506,10 @@ class AddTargetWidget < CWM::CustomWidget
   include Yast::Logger
   def initialize
     self.handle_all_events = true
-    printf("initialized an AddTargetWidget.11111111111111111111\n ")
+    #printf("initialized an AddTargetWidget.11111111111111111111\n ")
     @iscsi_name_length_max = 223
-    @popup_dialog = Yast::PopupClass.new
+    @back_storage = nil
+    @luns_to_create = Array.new
     time = Time.new
     date_str = time.strftime("%Y-%m")
     @target_name_input_field = TargetNameInput.new("iqn." + date_str + ".com.example")
@@ -541,7 +542,7 @@ class AddTargetWidget < CWM::CustomWidget
     )
   end
 
-  def store
+  def create_target
     cmd = "targetcli"
     p1 = "iscsi/ create"
     if @target_name_input_field.value.bytesize > @iscsi_name_length_max
@@ -552,35 +553,36 @@ class AddTargetWidget < CWM::CustomWidget
     ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
   end
 
+  #this function will fill the array luns_to_create with all paths of luns to be created
+  def prepare_luns_list()
+    #@luns_to_create = Array.new
+    luns = @lun_table.get_luns_to_create()
+    #p luns
+    luns.each do |lun|
+      @luns_to_create.push(lun[2])
+    end
+    p @luns_to_create
+  end
+  def create_luns
+    p "create_luns() is called.\n"
+  end
+
+  def store
+    self.create_target
+    #self.create_luns
+  end
+
   def handle(event)
     puts event 
     case event["ID"]
       when :next
-        puts "clicked Next."
-        puts @target_name_input_field.value
+        #puts "clicked Next."
+        #puts @target_name_input_field.value
+        self.prepare_luns_list
         
         if @target_portal_group_field.value.to_s.empty?
           self.popup_warning_dialog("Error", "Portal group can not be empty")
         end
-
- #       cmd = "targetcli"
- #     printf("target name has %d bytes", @target_name_input_field.value.bytesize)
- #       if @target_name_input_field.value.bytesize > @iscsi_name_length_max
-  #        self.popup_warning_dialog("Error", "Target name can not be longger than 223 bytes!")
-   #     end
-   #     p1 = "iscsi/ create"
-   #     p2 = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
-   #     ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
-        
-      when :add
-        file = UI.AskForExistingFile("/", "", _("Select file or device"))
-        if file == nil
-          puts "No file selected"
-        else
-          p file
-          p File.ftype(file)
-        end
-        
     end
     nil
   end
@@ -588,7 +590,7 @@ end
 
 class TargetTable < CWM::Table
   def initialize()
-    puts "initialize a TargetTable"
+   # puts "initialize a TargetTable"
     #p caller
     @targets = Array.new
     @targets_names = $target_data.get_target_names_array
@@ -598,7 +600,7 @@ class TargetTable < CWM::Table
   end
 
   def generate_items
-    puts "generate_items is called.\n"
+    #puts "generate_items is called.\n"
     items_array = Array.new
     @targets_names.each do |elem|
       items_array.push([rand(9999), elem, 1 , "Enabled"])
@@ -652,8 +654,8 @@ class TargetsTableWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize
-    puts "Initialized a TargetsTableWidget class"
-    p caller
+    #puts "Initialized a TargetsTableWidget class"
+    #p caller
     self.handle_all_events = true
     @target_table = TargetTable.new
     #p "@target_table is"
@@ -684,8 +686,8 @@ class TargetsTableWidget < CWM::CustomWidget
     case event["ID"]
       when :add
         puts "Clicked Add button!"
-        puts Yast::UI.QueryWidget(Id(:targets_table), :CurrentItem)
-        puts Yast::UI.QueryWidget(Id(:targets_table), :Items)
+        #puts Yast::UI.QueryWidget(Id(:targets_table), :CurrentItem)
+        #puts Yast::UI.QueryWidget(Id(:targets_table), :Items)
         contents = VBox(@add_target_page,HStretch(),VStretch())
 
         Yast::Wizard.CreateDialog
@@ -709,60 +711,83 @@ end
 
 class LUNTable < CWM::Table
   def initialize(target_name)
-    puts "initialize a LUNTable"
+    #puts "initialize a LUNTable"
     #p caller
+    # @luns will store all luns exsisted and will be created
     @luns = Array.new
-    @targets_names = $target_data.get_target_names_array
-    @targets = generate_items()
-    #@targets.push([3, "iqn.2017-04.suse.com.lszhu", 1, "Enabled"])
-    #p @targets_names
+    # @luns_add will store the luns will be created, will not store any exsisted luns.
+    @luns_added = Array.new
+    @luns = generate_items()
   end
 
   def generate_items
-    puts "generate_items is called.\n"
+    #puts "generate_items is called.\n"
     items_array = Array.new
-    @targets_names.each do |elem|
-      items_array.push([rand(9999), elem, 1 , "Enabled"])
-    end
+    #@targets_names.each do |elem|
+      #items_array.push([rand(9999), elem, 1 , "Enabled"])
+    #end
     return items_array
   end
 
   def header
-    ["Targets", "Portal Group", "TPG Status"]
+    [_("LUN"), _("Name"), _("path")]
   end
 
   def items
-    #@targets = generate_items()
-    @targets
+    @luns = generate_items()
+    return @luns
   end
 
   def get_selected
     return self.value
   end
 
- #this function will add a target in the table, the parameter item is an array
-  def add_target_item(item)
+  #This function will return the array @luns, LUNsTableWidget will use this to decide the lun number
+  def get_luns
+    return @luns
   end
 
-  #this function will remove a target from the table.
-  def remove_target_item(id)
-    #p @targets
-    @targets.each do |elem|
-      #printf("id is %d.\n", id)
-      if elem[0] == id
-        #printf("elem[0] is %d.\n", elem[0]);
-        p elem
-      end
-      @targets.delete_if{|elem| elem[0] == id}
-    end
-       p @targets
-       update_table(@targets)
-       
+  #This function will return the array @luns_added, means the new luns need to create
+  def get_new_luns
+    return @luns_added
   end
-  
-  def update_table(items)
-    #@targets.push([1, "iqn.2017-04.suse.com.test", 1, "Enabled"])
-    self.change_items(items)
+ #this function will add a lun in the table, the parameter item is an array
+  def add_lun_item(item)
+    @luns.push(item)
+    @luns_added.push(item)
+    self.update_table(@luns)
+  end
+
+  #this function will delete a LUN both in a target tpg#n/luns and /backstore/fileio or block via targetcli
+  def delete_lun(lun_str)
+  end
+  #this function will remove a lun from the table, will try to delete it from @luns_added and @luns
+  def remove_lun_item(id)
+    @luns_added.delete_if{|item| item[0] == id}
+    @luns.delete_if{|item| item[0] == id}
+    self.update_table(@luns)
+  end
+
+  def validate
+    puts "validate() in LUN_table is called."
+    #p @luns_added
+    @luns_added.each do |lun|
+      #puts "Loop in validate() function"
+      #p lun
+      if $back_stores.validate_backstore_exist(lun[2])
+        #puts lun[2]
+        #puts "Detected an exsisted storeage in use"
+        err_msg = _("The selected backend storeage ") + lun[2] + _(" is already in use.")
+        Yast::Popup.Error(err_msg)
+        self.remove_lun_item(lun[0])
+        return false
+      end
+    end
+    return true
+  end
+
+  def update_table(luns)
+    self.change_items(luns)
   end
 end
 
@@ -774,17 +799,12 @@ class LUNsTableWidget < CWM::CustomWidget
   include Yast::Logger
   def initialize
     self.handle_all_events = true
+    @lun_table = LUNTable.new("test")
   end
 
   def contents
     VBox(
-      Table(
-         Id(:targets_table),
-         Header("LUN", "Name", "path"),
-           [
-             Item(Id(1), "0", "test_lun","/test/test"),
-           ]
-       ),
+       @lun_table,
        HBox(
          PushButton(Id(:add), _("Add")),
          PushButton(Id(:edit), _("Edit")),
@@ -793,22 +813,32 @@ class LUNsTableWidget < CWM::CustomWidget
   )
   end
 
+#return an array of the paths of all luns need to be created
+ def get_luns_to_create
+   luns_to_create = Array.new
+   new_luns = @lun_table.get_new_luns
+   p new_luns
+   new_luns.each do |lun|
+     luns_to_create.push(lun[2])
+   end  
+ end
   def handle(event)
     puts event
     case event["ID"]
       when :add
-        puts "Clicked Add button!"
-        #puts Yast::UI.QueryWidget(Id(:targets_table), :CurrentItem)
-        #puts Yast::UI.QueryWidget(Id(:targets_table), :Items)
-        #Yast::UI.ChangeWidget(Id(:targets_table), Cell(1, 1), "testtest")
-        #add_target_page = AddTargetWidget.new
-        #contents = VBox(add_target_page,HStretch(),VStretch())
- 
-        #Yast::Wizard.CreateDialog
-        #CWM.show(contents, caption: _("Add iSCSI Target"))
-         #Yast::Wizard.CloseDialog
-         
-     end
+        file = UI.AskForExistingFile("/", "", _("Select a file or device"))
+          if file == nil
+            puts "No file selected"
+          else
+            #p file
+            #p File.ftype(file)
+          end
+          luns = @lun_table.get_luns()
+          lun_number = rand(100)
+          # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
+          lun_name = file[1,file.length].gsub(/\//,"_")
+          @lun_table.add_lun_item([rand(9999), lun_number, file,lun_name, File.ftype(file)])
+       	end
      nil
   end
 
