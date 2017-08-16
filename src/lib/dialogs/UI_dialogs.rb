@@ -762,7 +762,7 @@ class LUNTable < CWM::Table
   def delete_lun(lun_str)
   end
   #this function will remove a lun from the table, will try to delete it from @luns_added and @luns
-  def remove_lun_item(id)
+  def table_remove_lun_item(id)
     @luns_added.delete_if{|item| item[0] == id}
     @luns.delete_if{|item| item[0] == id}
     self.update_table(@luns)
@@ -779,7 +779,7 @@ class LUNTable < CWM::Table
         #puts "Detected an exsisted storeage in use"
         err_msg = _("The selected backend storeage ") + lun[2] + _(" is already in use.")
         Yast::Popup.Error(err_msg)
-        self.remove_lun_item(lun[0])
+        self.table_remove_lun_item(lun[0])
         return false
       end
     end
