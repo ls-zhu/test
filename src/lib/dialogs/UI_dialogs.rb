@@ -771,6 +771,24 @@ class LUNTable < CWM::Table
   def validate
     puts "validate() in LUN_table is called."
     #p @luns_added
+    #This loop will validate whether the lun is a block device or fileio, return false if others.
+    @luns_added.each do |lun|
+      case lun[4]
+        when "characterSpecial"
+          Yast::Popup.Error(_("The selected storage is a character file, LUNs can only be fileio or block devices."))
+          self.table_remove_lun_item(lun[0])
+        when "link"
+          Yast::Popup.Error(_("The selected storage is a link file, LUNs can only be fileio or block devices."))
+          self.table_remove_lun_item(lun[0])
+        when "socket"
+          Yast::Popup.Error(_("The selected storage is a socket file, LUNs can only be fileio or block devices."))
+          self.table_remove_lun_item(lun[0])
+        when "unknown"
+          Yast::Popup.Error(_("The selected file type is unknow, LUNs can only be fileio or block devices."))
+          self.table_remove_lun_item(lun[0])
+      end
+    end
+    #This loop will validate whether the lun is already in use
     @luns_added.each do |lun|
       #puts "Loop in validate() function"
       #p lun
@@ -784,6 +802,32 @@ class LUNTable < CWM::Table
       end
     end
     return true
+  end
+
+  def create_luns_backstore(Array lun)
+    cmd = "targetcli"
+    if lun[4] == "file"
+      p1 = "backstores/fileio create"
+    end
+    if lun[4] == "blockSpecial"
+      p1 = "backstores/block create"
+    end
+    p1 = "iscsi/ create"
+    if @target_name_input_field.value.bytesize > @iscsi_name_length_max
+      p2 = @target_name_input_field.value
+    else
+      p2 = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
+    end
+    ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
+  end
+  
+  def store
+    puts "store() in LUNTable is called."
+    #Here we will create new luns in backstore/fileio or block
+    @luns_added.each do |lun|
+      printf("It will adda lun with path %s, with lun type %s", lun[2], lun[4])
+      
+    end
   end
 
   def update_table(luns)

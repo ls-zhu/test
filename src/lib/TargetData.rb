@@ -35,13 +35,13 @@ class Backstores
 
   #This function will return whether the backstore(path) already exsited
   def validate_backstore_exist(str)
-    puts "validate_backstore_exist() is called." 
-    puts "The backstores_list is"
-    puts @backstores_list
+    #puts "validate_backstore_exist() is called." 
+    #puts "The backstores_list is"
+    #puts @backstores_list
     @backstores_list.each do |backstore|
-      puts "in the loop"
-      puts backstore
-      puts str
+      #puts "in the loop"
+      #puts backstore
+      #puts str
       if backstore == str
         #found the path(str) already exsited in the backsotre list, return true if exist
         return true
