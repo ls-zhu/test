@@ -777,15 +777,23 @@ class LUNTable < CWM::Table
         when "characterSpecial"
           Yast::Popup.Error(_("The selected storage is a character file, LUNs can only be fileio or block devices."))
           self.table_remove_lun_item(lun[0])
+          return false
+          break
         when "link"
           Yast::Popup.Error(_("The selected storage is a link file, LUNs can only be fileio or block devices."))
           self.table_remove_lun_item(lun[0])
+          return false
+          break
         when "socket"
           Yast::Popup.Error(_("The selected storage is a socket file, LUNs can only be fileio or block devices."))
           self.table_remove_lun_item(lun[0])
+          return false
+          break
         when "unknown"
           Yast::Popup.Error(_("The selected file type is unknow, LUNs can only be fileio or block devices."))
           self.table_remove_lun_item(lun[0])
+          return false
+          break
       end
     end
     #This loop will validate whether the lun is already in use
@@ -804,21 +812,15 @@ class LUNTable < CWM::Table
     return true
   end
 
-  def create_luns_backstore(Array lun)
+  def create_luns_backstore(lun)
     cmd = "targetcli"
     if lun[4] == "file"
-      p1 = "backstores/fileio create"
+      p1 = "backstores/fileio create name=" + lun[3] + " file_or_dev=" + lun[2]
     end
     if lun[4] == "blockSpecial"
-      p1 = "backstores/block create"
+      p1 = "backstores/block create name=" + lun[3] + " dev=" + lun[2]
     end
-    p1 = "iscsi/ create"
-    if @target_name_input_field.value.bytesize > @iscsi_name_length_max
-      p2 = @target_name_input_field.value
-    else
-      p2 = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
-    end
-    ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
+    ret = Yast::Execute.locally(cmd, p1, stdout: :capture)
   end
   
   def store
@@ -826,7 +828,7 @@ class LUNTable < CWM::Table
     #Here we will create new luns in backstore/fileio or block
     @luns_added.each do |lun|
       printf("It will adda lun with path %s, with lun type %s", lun[2], lun[4])
-      
+      self.create_luns_backstore(lun)
     end
   end
 
