@@ -506,9 +506,9 @@ class AddTargetWidget < CWM::CustomWidget
   include Yast::Logger
   def initialize
     self.handle_all_events = true
-    #printf("initialized an AddTargetWidget.11111111111111111111\n ")
     @iscsi_name_length_max = 223
     @back_storage = nil
+    @target_name = nil
     @luns_to_create = Array.new
     time = Time.new
     date_str = time.strftime("%Y-%m")
@@ -519,11 +519,10 @@ class AddTargetWidget < CWM::CustomWidget
     @IP_selsection_box = IpSelectionComboBox.new
     @target_bind_all_ip_checkbox = BindAllIP.new
     @use_login_auth = UseLoginAuth.new
-    @lun_table = LUNsTableWidget.new
+    @lun_table_widget = LUNsTableWidget.new
   end
   
   def contents
-   
     VBox(
       HBox(
         @target_name_input_field,
@@ -538,7 +537,7 @@ class AddTargetWidget < CWM::CustomWidget
         @target_bind_all_ip_checkbox,
         @use_login_auth,
       ),
-      @lun_table,
+      @lun_table_widget,
     )
   end
 
@@ -546,30 +545,36 @@ class AddTargetWidget < CWM::CustomWidget
     cmd = "targetcli"
     p1 = "iscsi/ create"
     if @target_name_input_field.value.bytesize > @iscsi_name_length_max
-      p2 = @target_name_input_field.value
+      @target_name = @target_name_input_field.value
     else
-      p2 = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
+      @target_name = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
     end
-    ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
+    ret = Yast::Execute.locally(cmd, p1, @target_name, stdout: :capture)
   end
 
-  #this function will fill the array luns_to_create with all paths of luns to be created
-  def prepare_luns_list()
-    #@luns_to_create = Array.new
-    luns = @lun_table.get_luns_to_create()
-    #p luns
-    luns.each do |lun|
-      @luns_to_create.push(lun[2])
-    end
-    p @luns_to_create
-  end
+  #This function will create luns under tpg#N/luns from backstores
   def create_luns
-    p "create_luns() is called.\n"
+    p "create_luns called."
+    luns = @lun_table_widget.get_new_luns
+    #p luns
+    cmd = "targetcli"
+    p1 = "iscsi/" + @target_name +"/tpg" + @target_portal_group_field.value.to_s + "/luns/" + " create"
+    luns.each do |lun|
+      if lun[4] == "blockSpecial"
+        p2 = "/backstores/block/" + lun[3]
+      end
+      if lun[4] == "file"
+        p2 = "/backstores/fileio/" + lun[3]
+      end
+      ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
+    end
   end
 
   def store
+    puts "Store in AddTargetWidget is called."
+    @lun_table_widget.create_luns_backstores
     self.create_target
-    #self.create_luns
+    self.create_luns
   end
 
   def handle(event)
@@ -578,7 +583,7 @@ class AddTargetWidget < CWM::CustomWidget
       when :next
         #puts "clicked Next."
         #puts @target_name_input_field.value
-        self.prepare_luns_list
+        #self.prepare_luns_list
         
         if @target_portal_group_field.value.to_s.empty?
           self.popup_warning_dialog("Error", "Portal group can not be empty")
@@ -812,7 +817,7 @@ class LUNTable < CWM::Table
     return true
   end
 
-  def create_luns_backstore(lun)
+  def do_create_luns_backstore(lun)
     cmd = "targetcli"
     if lun[4] == "file"
       p1 = "backstores/fileio create name=" + lun[3] + " file_or_dev=" + lun[2]
@@ -823,12 +828,12 @@ class LUNTable < CWM::Table
     ret = Yast::Execute.locally(cmd, p1, stdout: :capture)
   end
   
-  def store
-    puts "store() in LUNTable is called."
+  def create_luns_backstore
+    puts "create_luns_backstore() in LUNTable is called."
     #Here we will create new luns in backstore/fileio or block
     @luns_added.each do |lun|
       printf("It will adda lun with path %s, with lun type %s", lun[2], lun[4])
-      self.create_luns_backstore(lun)
+      self.do_create_luns_backstore(lun)
     end
   end
 
@@ -859,32 +864,25 @@ class LUNsTableWidget < CWM::CustomWidget
   )
   end
 
-#return an array of the paths of all luns need to be created
- def get_luns_to_create
-   luns_to_create = Array.new
-   new_luns = @lun_table.get_new_luns
-   p new_luns
-   new_luns.each do |lun|
-     luns_to_create.push(lun[2])
-   end  
- end
+  #This function will return new luns, aka the newly added luns which needed to be created in tpg#N/luns
+  def get_new_luns
+    @lun_table.get_new_luns
+  end
+
+  def create_luns_backstores
+    @lun_table.create_luns_backstore
+  end
   def handle(event)
     puts event
     case event["ID"]
       when :add
         file = UI.AskForExistingFile("/", "", _("Select a file or device"))
-          if file == nil
-            puts "No file selected"
-          else
-            #p file
-            #p File.ftype(file)
-          end
-          luns = @lun_table.get_luns()
-          lun_number = rand(100)
-          # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
-          lun_name = file[1,file.length].gsub(/\//,"_")
-          @lun_table.add_lun_item([rand(9999), lun_number, file,lun_name, File.ftype(file)])
-       	end
+        luns = @lun_table.get_luns()
+        lun_number = rand(100)
+        # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
+        lun_name = file[1,file.length].gsub(/\//,"_")
+        @lun_table.add_lun_item([rand(9999), lun_number, file,lun_name, File.ftype(file)])
+      end
      nil
   end
 
