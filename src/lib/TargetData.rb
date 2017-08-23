@@ -154,6 +154,15 @@ class TPG
   def fetch_acls(acls_name)
      @acls_hash_list.fetch("acls")
   end
+
+  def fetch_lun(lun_num)
+    @luns_list.fetch(lun_num)
+  end
+
+  def store_lun(lun_num, lun_name)
+    @luns_list.store(lun_num, lun_name)
+  end
+  
 end
 
 class Target
@@ -403,7 +412,7 @@ class TargetData
         puts lun_num
         lun_name_tmp = @re_lun_name.match(line).to_s
         lun_name = lun_name_tmp[1,lun_name_tmp.length-2]
-        p lun_name
+        @current_tpg.store_lun(lun_num, lun_name)
       end
     
     end # end of @target_outout.each do |line|
