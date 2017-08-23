@@ -11,8 +11,6 @@ class Backstores
     @backstore_path = nil
     @re_backstore_path = Regexp.new(/\/[\w\/\.]+\s/)
     #@re_backstore_name = Regexp.new(/\/[\w\/\.]+\s/)
-    @output = Yast::Execute.locally("targetcli", "backstores/ ls", stdout: :capture)
-    @backstores_output = @output.split("\n")
     #@backstores_list should Hash.new if we need to store storage name like iscsi_sdb
     @backstores_list = Array.new
     #p @output
@@ -20,6 +18,8 @@ class Backstores
   end
 
   def analyze
+    @output = Yast::Execute.locally("targetcli", "backstores/ ls", stdout: :capture)
+    @backstores_output = @output.split("\n")
     @backstores_output.each do |line|
       if @backstore_path = @re_backstore_path.match(line)
         @backstores_list.push(@backstore_path.to_s.strip)
@@ -135,10 +135,12 @@ class TPG
   @tpg_number = nil
   @acls_hash_list = nil
   @up_level_target = nil
+  @luns_list = nil
   def initialize(number)
     #printf("Create a TPG with number %d.\n",number)
     @tpg_number = number
-    @acls_hash_list = Hash.new 
+    @acls_hash_list = Hash.new
+    @luns_list = Hash.new
   end
   def fetch_tpg_number()
     @tpg_number
@@ -151,13 +153,12 @@ class TPG
   end
   def fetch_acls(acls_name)
      @acls_hash_list.fetch("acls")
-  end 
+  end
 end
 
 class Target
   @target_name=nil
   @tpg_hash_list=nil
-  @luns={}
   def initialize(name)
     #printf("Initializing a target, name is %s.\n",name)
     @target_name = name
@@ -231,6 +232,14 @@ class TargetData
 
     #match the mapped lun, like "[lun2" in "[lun2 fileio/iscsi_file1 (rw)]", we matched one more \s to avoid bugs.
     @re_mapped_lun = Regexp.new(/\[lun\d+\s/)
+
+    #match a line like "| | | | o- lun2 ...................... [fileio/iscsi_file1 (/home/lszhu/target1.raw) (default_tg_pt_gp)]"
+    #or "o- lun0 .................................................................. [block/iscsi_sdb (/dev/sdb) (default_tg_pt_gp)]"
+    @re_lun = Regexp.new(/\-\slun\d+\s\.+\s\[(fileio|block)\//)
+    #match lun number like lun0, lun1, lun2....
+    @re_lun_num = Regexp.new(/\-\slun\d+\s/)
+    #match lun name like [fileio/iscsi_file1 or [block/iscsi_sdb
+    @re_lun_name = Regexp.new(/\[(fileio|block)\/[\w\_\d]+\s/)
 
     #iqn_name or eui_name would be a MatchData, but target_name would be a string.
     @iqn_name= nil
@@ -384,6 +393,16 @@ class TargetData
         @current_acl_rule.store_mapped_lun(mapping_lun_num)
         mapped_lun_num = @mapped_lun_name[3,@mapped_lun_name.length]
         @current_acl_rule.fetch_mapped_lun(mapping_lun_num).store_mapped_lun_number(mapped_lun_num)
+      end
+
+      #handle luns here
+      if @re_lun.match(line)
+        #lun_num is a string like lun0, lun1,lun2....
+        lun_num_tmp = @re_lun_num.match(line).to_s
+        lun_num = lun_num_tmp[2,lun_num_tmp.length]
+        puts lun_num
+        lun_name_tmp = @re_lun_name.match(line)
+        puts lun_name_tmp
       end
     
     end # end of @target_outout.each do |line|

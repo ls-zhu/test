@@ -7,6 +7,7 @@ require "cwm/widget"
 require "ui/service_status"
 require "yast"
 require "cwm/table"
+require "cwm/dialog"
 require "yast2/execute"
 
 Yast.import "CWM"
@@ -835,6 +836,7 @@ class LUNTable < CWM::Table
       printf("It will adda lun with path %s, with lun type %s", lun[2], lun[4])
       self.do_create_luns_backstore(lun)
     end
+    $back_stores.analyze
   end
 
   def update_table(luns)
@@ -842,6 +844,18 @@ class LUNTable < CWM::Table
   end
 end
 
+class LUNDetailsWidget < CWM::Dialog
+  def title
+    return "Test Dialog"
+  end
+
+  def contents
+    VBox(
+      HStretch(),
+      VStretch(),
+    )
+  end
+end
 
 class LUNsTableWidget < CWM::CustomWidget
   include Yast
@@ -851,6 +865,7 @@ class LUNsTableWidget < CWM::CustomWidget
   def initialize
     self.handle_all_events = true
     @lun_table = LUNTable.new("test")
+    @lun_details = LUNDetailsWidget.new
   end
 
   def contents
@@ -875,13 +890,19 @@ class LUNsTableWidget < CWM::CustomWidget
   def handle(event)
     puts event
     case event["ID"]
+      when :edit
+        @lun_details.run
+        #contents = VBox(Heading(_("Disk order settings")),HStretch(),VStretch())
+        #Yast::UI.OpenDialog(contents)
       when :add
         file = UI.AskForExistingFile("/", "", _("Select a file or device"))
-        luns = @lun_table.get_luns()
-        lun_number = rand(100)
-        # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
-        lun_name = file[1,file.length].gsub(/\//,"_")
-        @lun_table.add_lun_item([rand(9999), lun_number, file,lun_name, File.ftype(file)])
+        if file !=nil
+          luns = @lun_table.get_luns()
+          lun_number = rand(100)
+          # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
+          lun_name = file[1,file.length].gsub(/\//,"_")
+          @lun_table.add_lun_item([rand(9999), lun_number, file,lun_name, File.ftype(file)])
+        end
       end
      nil
   end
