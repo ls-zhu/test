@@ -513,14 +513,18 @@ class AddTargetWidget < CWM::CustomWidget
     @back_storage = nil
     @target_name = nil
     @luns_to_create = Array.new
+    #if mode == "new", need to create targets and luns, if mode == "edit", just change the target config
+    @mode = nil
     time = Time.new
     date_str = time.strftime("%Y-%m")
     if target_name == nil
+      @mode = "new"
       @target_name_input_field = TargetNameInput.new("iqn." + date_str + ".com.example")
       @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
       @target_portal_group_field = PortalGroupInput.new(1)
       @target_port_num_field = TargetPortNumberInput.new(3260)
     else
+      @mode = "edit"
       @target_name_input_field = TargetNameInput.new(target_name)
       #just use a empty string here to adapt the string parameter requirement
       @target_identifier_input_field = TargetIdentifierInput.new("")
@@ -584,8 +588,10 @@ class AddTargetWidget < CWM::CustomWidget
   def store
     puts "Store in AddTargetWidget is called."
     @lun_table_widget.create_luns_backstores
-    self.create_target
-    self.create_luns
+    if @mode == "new"
+      self.create_target
+      self.create_luns
+    end
   end
 
   def handle(event)
