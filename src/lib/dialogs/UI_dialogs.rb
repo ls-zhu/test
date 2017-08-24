@@ -499,13 +499,15 @@ class IpSelectionComboBox < CWM::ComboBox
   end
 end
 
-
+#This class is used for both adding a target and editing a target
 class AddTargetWidget < CWM::CustomWidget
   include Yast
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize
+
+  #Fill nil when add a target or fill the name of the target to be edited
+  def initialize(target_name)
     self.handle_all_events = true
     @iscsi_name_length_max = 223
     @back_storage = nil
@@ -513,10 +515,18 @@ class AddTargetWidget < CWM::CustomWidget
     @luns_to_create = Array.new
     time = Time.new
     date_str = time.strftime("%Y-%m")
-    @target_name_input_field = TargetNameInput.new("iqn." + date_str + ".com.example")
-    @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
-    @target_portal_group_field = PortalGroupInput.new(1)
-    @target_port_num_field = TargetPortNumberInput.new(3260)
+    if target_name == nil
+      @target_name_input_field = TargetNameInput.new("iqn." + date_str + ".com.example")
+      @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
+      @target_portal_group_field = PortalGroupInput.new(1)
+      @target_port_num_field = TargetPortNumberInput.new(3260)
+    else
+      @target_name_input_field = TargetNameInput.new(target_name)
+      #just use a empty string here to adapt the string parameter requirement
+      @target_identifier_input_field = TargetIdentifierInput.new("")
+      @target_portal_group_field = PortalGroupInput.new(2)
+      @target_port_num_field = TargetPortNumberInput.new(7260)
+    end
     @IP_selsection_box = IpSelectionComboBox.new
     @target_bind_all_ip_checkbox = BindAllIP.new
     @use_login_auth = UseLoginAuth.new
@@ -624,7 +634,15 @@ class TargetTable < CWM::Table
   end
 
   def get_selected
-    return self.value
+    #p @targets
+    #p self.value
+    @targets.each do |target|
+      #p target
+      if target[0] == self.value
+        return target
+      end
+    end
+    return nil
   end
 
  #this function will add a target in the table, the parameter item is an array
@@ -666,13 +684,14 @@ class TargetsTableWidget < CWM::CustomWidget
     @target_table = TargetTable.new
     #p "@target_table is"
     #p @target_table
-    @add_target_page = AddTargetWidget.new
+    @add_target_page = AddTargetWidget.new(nil)
+    @edit_target_page = nil
   end
 
   def contents
     VBox(
       #Table(
-        # Id(:targets_table),
+        Id(:targets_table),
          #Header("Targets", "Portal Group", "TPG Status"),
            #[
              #Item(Id(1), "iqn.2017-04.suse.com.lszhu.target.sn.abcdefghisdljhlshjl", 1,"Enabled"),
@@ -692,19 +711,25 @@ class TargetsTableWidget < CWM::CustomWidget
     case event["ID"]
       when :add
         puts "Clicked Add button!"
-        #puts Yast::UI.QueryWidget(Id(:targets_table), :CurrentItem)
-        #puts Yast::UI.QueryWidget(Id(:targets_table), :Items)
         contents = VBox(@add_target_page,HStretch(),VStretch())
-
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
         Yast::Wizard.CloseDialog
-        @add_target_page = AddTargetWidget.new
+        @add_target_page = AddTargetWidget.new(nil)
+      when :edit
+        puts "Clicked Edit button!"
+        target = @target_table.get_selected()
+        @edit_target_page = AddTargetWidget.new(target[1])
+        contents = VBox(@edit_target_page,HStretch(),VStretch())
+        Yast::Wizard.CreateDialog
+        CWM.show(contents, caption: _("Edit iSCSI Target"))
+        Yast::Wizard.CloseDialog
+        p target
       when :delete
         id = @target_table.get_selected()
         puts "Clicked Delete button"
         printf("The selected value is %s.\n", id)
-        @target_table.remove_target_item(id) 
+       # @target_table.remove_target_item(id) 
          
      end
      nil
@@ -727,8 +752,10 @@ class LUNTable < CWM::Table
   end
 
   def generate_items
-    #puts "generate_items is called.\n"
+    puts "generate_items is called.\n"
     items_array = Array.new
+    #$target_data.fetch_target
+
     #@targets_names.each do |elem|
       #items_array.push([rand(9999), elem, 1 , "Enabled"])
     #end
