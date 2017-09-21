@@ -6,4 +6,67 @@ https://github.com/search?q=org%3Ayast+Execute.locally&type=Code
 http://www.rubydoc.info/github/yast/yast-yast2/UI%2FServiceStatus
 https://github.com/yast/yast-yast2/pull/602/filess
 
-
+<mvidner> Lingshan's question is: can he use CWM::Dialog for a non-wizard popup?
+<mvidner> I am not sure, CWM does seem to assume a Wizard, but it would be a shame if we could not use it elsewhere
+<lszhu_> I need a pop up window that I can place labels / input fields / buttons. In the new CWM way, not old fashion code which your guys not recommended
+<lszhu_> Maybe I should try UI/dialog again
+<lslezak> jreidinger: ^^^ do we have something like UI/popup?
+<jreidinger> mvidner: well, storage-ng uses that. I think that teclator or ancorgs knows details
+<lszhu_> ping ancorgs teclator :)
+<jilopez> mvidner: jreidinger: https://github.com/yast/yast-storage-ng/blob/master/src/lib/y2partitioner/dialogs/popup.rb
+<lszhu_> oh, it's using CWM::Dialog, so it is not a full-size window?
+<lslezak> jsrain: um, which bug number? I cannot find it...
+<jsrain> lslezak: https://bugzilla.suse.com/show_bug.cgi?id=1059065
+<ancorgs> lszhu_: on the other hand, I would only recomend CWM::Dialog if you are already using CWM for the rest of your interface, so you need the new dialog to be WITHIN your CWM infrastructure
+<ancorgs> in other case, I would recoment UI::Dialog
+<mvidner> lszhu_: the `layout` method emulates Wizard UI interface (the :contents id), and wizard_create_dialog overrides the big wizard
+<lszhu_> ancorgs, thanks and that's why I stick to CWM. Do you mean CWM::Dialog can be a smaller size?
+<lszhu_> mvidner, I don't understand so much CWM internals yet, do you mean if I also use layout like the code above, I can get a smaller window?
+<lslezak> jsrain: should be hopefully easy (so out-of -scrum is OK)
+<ancorgs> lszhu_: just copy and paste the wizard_create_dialog and should_open_dialog? methods from the example provided by jilopez
+<jsrain> lslezak: thanks!
+<ancorgs> and you will have a window of whatever size you decide
+<lszhu_> ancorgs, thanks, I would try that code when I get office tomorrow!
+<lszhu_> Let me record these in my nots
+<ancorgs> and that size is decided by the methods #layouts and #contents
+<lszhu_> Cool!!!!
+<ancorgs> "layout" singular
+<jilopez> lszhu_: here you have an example using the Popup class
+<jilopez> lszhu_: https://github.com/yast/yast-storage-ng/blob/master/src/lib/y2partitioner/dialogs/btrfs_subvolumes.rb
+<lszhu_> I am so moved to tears.. This problem troubled me for 2 weeks even I am having my vacations.. 
+<imobach> please, anyone to review the blog post? https://lizards.opensuse.org/?p=12762&preview=true
+* lslezak is now known as lslezak_
+<imobach> ancorgs: mvidner: lslezak_: jreidinger: snwint: I am mainly looking at you :)
+<lszhu_> Thanks for your kindly help, it is 21:30 in Beijing now, I am leaving for a shower
+<lszhu_> Thanks and Bye!
+<ancorgs> lszhu_: event #layout could not be needed at all
+<lslezak_> imobach: yes, just after finishing the roles PR, already in the queue for some time... ;-)
+<lszhu_> yes?
+<lszhu_> I am still here
+<lszhu_> but it seems layout is used to re-size the window
+<ancorgs> maybe just doing "Yast::UI.OpenDialog(contents)" in the line 9 of that example
+* lslezak_ is now known as lslezak
+<imobach> lslezak_: sure, not in a hurry
+<HuHa> lszhu_: yes, if you don't use a wizard dialog, the layout defines the window size
+<lszhu_> Then how can Yast know which size should the window be?
+<ancorgs> would be enough for you. If you don't have weird widgets like tables inside the window
+<ancorgs> based on the content
+<lszhu_> No, just labels or inputs
+<HuHa> lszhu_: but you can easily enforce a special size by using a HSpacing in the VBox and a VSpacing in the HBox
+<jreidinger> lslezak: one more https://github.com/yast/skelcd-control-leanos/pull/8 and SLED will follow
+<HuHa> as a matter of fact, for everything that can scroll internally it makes very much sense to do that
+<ancorgs> we enforced size and height with HSpacing and MinSize because the tables tend to misbehave with dinamically calculated windows
+<HuHa> i.e. enforce a certain minimum size so the content of a list or tree remains visible
+* HuHa wrote a documentation for that 10+ years ago
+<lszhu_> Then maybe I just need a openDialog function, even not need a widget, I can try that
+<ancorgs> lszhu_: so just try without enforcing the layout (use OpenDialog(contents) directly) and fallback to using the layout if it doesn't work for you
+<ancorgs> the good old trial and error system
+<HuHa> https://doc.opensuse.org/projects/YaST/SLES11/onefile/yast-onefile.html#initial_dialog_sizes
+<lszhu_> I would try that
+<lszhu_> HuHa, thanks for your doc
+<HuHa> welcome
+<HuHa> somewhere I used to have an OpenOffice presentation for the simple things, too
+* HuHa looks
+<HuHa> no, it's no longer there :-(
+<lszhu_> Thanks, shower time for me now. Thanks and bye!
+<HuHa> bye
