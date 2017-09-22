@@ -409,7 +409,7 @@ class TargetData
         #lun_num is a string like lun0, lun1,lun2....
         lun_num_tmp = @re_lun_num.match(line).to_s
         lun_num = lun_num_tmp[2,lun_num_tmp.length]
-        puts lun_num
+        #puts lun_num
         lun_name_tmp = @re_lun_name.match(line).to_s
         lun_name = lun_name_tmp[1,lun_name_tmp.length-2]
         @current_tpg.store_lun(lun_num, lun_name)

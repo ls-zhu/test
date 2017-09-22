@@ -769,7 +769,7 @@ class LUNTable < CWM::Table
   end
 
   def header
-    [_("LUN"), _("Name"), _("path")]
+    [_("LUN"), _("Name"), _("Path")]
   end
 
   def items
