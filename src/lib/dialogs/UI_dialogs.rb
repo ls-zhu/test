@@ -934,7 +934,7 @@ class LUNsTableWidget < CWM::CustomWidget
           lun_number = rand(100)
           # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
           lun_name = file[1,file.length].gsub(/\//,"_")
-          @lun_table.add_lun_item([rand(9999), lun_number, file,lun_name, File.ftype(file)])
+          @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
         end
       end
      nil

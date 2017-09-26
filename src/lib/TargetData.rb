@@ -162,6 +162,11 @@ class TPG
   def store_lun(lun_num, lun_name)
     @luns_list.store(lun_num, lun_name)
   end
+
+  #This function will return all luns in the TPG
+  def get_luns()
+    return @luns_list
+  end
   
 end
 
@@ -249,6 +254,8 @@ class TargetData
     @re_lun_num = Regexp.new(/\-\slun\d+\s/)
     #match lun name like [fileio/iscsi_file1 or [block/iscsi_sdb
     @re_lun_name = Regexp.new(/\[(fileio|block)\/[\w\_\d]+\s/)
+    #match lun patch like:(/home/lszhu/target1.raw) or (/dev/sdb)
+    @re_lun_path = Regexp.new(/[(]\/(\w|\.|\/)+[)]/)
 
     #iqn_name or eui_name would be a MatchData, but target_name would be a string.
     @iqn_name= nil
@@ -406,13 +413,21 @@ class TargetData
 
       #handle luns here
       if @re_lun.match(line)
+        p line
         #lun_num is a string like lun0, lun1,lun2....
         lun_num_tmp = @re_lun_num.match(line).to_s
         lun_num = lun_num_tmp[2,lun_num_tmp.length]
         #puts lun_num
         lun_name_tmp = @re_lun_name.match(line).to_s
         lun_name = lun_name_tmp[1,lun_name_tmp.length-2]
-        @current_tpg.store_lun(lun_num, lun_name)
+        #lun_num_int is a number like 1,3,57.
+        lun_num_int = lun_num[3,lun_num.length]
+        lun_path_tmp = @re_lun_path.match(line).to_s
+        lun_path = lun_path_tmp[1,lun_path_tmp.length-2]
+        #p lun_num_int
+        #p lun_path
+        @current_tpg.store_lun(lun_num,[rand(9999), lun_num_int, lun_name, lun_path, File.ftype(lun_path)])
+        p @current_tpg.get_luns()
       end
     
     end # end of @target_outout.each do |line|
