@@ -371,12 +371,14 @@ class TargetIdentifierInput < CWM::InputField
 end
 
 class PortalGroupInput < CWM::IntField
-  def initialize(str)
-    @config = str
+  def initialize(num)
+    @config = num.to_i
+    #p num.class
+    #printf("@config is %d.\n", @config)
   end
 
   def label
-    _("Portal group")
+    _("Portal Group")
   end
 
   def init
@@ -396,7 +398,7 @@ end
 
 class TargetPortNumberInput < CWM::IntField
   def initialize(str)
-    @config = str
+    @config = str.to_s
   end
 
   def label
@@ -512,7 +514,8 @@ class AddTargetWidget < CWM::CustomWidget
     @iscsi_name_length_max = 223
     @back_storage = nil
     @target_name = nil
-    @luns_to_create = Array.new
+    #luns contains the luns would be shown in the lun table
+    luns = nil
     #if mode == "new", need to create targets and luns, if mode == "edit", just change the target config
     @mode = nil
     time = Time.new
@@ -525,16 +528,25 @@ class AddTargetWidget < CWM::CustomWidget
       @target_port_num_field = TargetPortNumberInput.new(3260)
     else
       @mode = "edit"
+      printf("Editing target %s.\n",target_name)
+      tpg_num = 0
+      target_list = $target_data.get_target_list
+      target = target_list.fetch_target(target_name)
+      #tpg = target.fetch_tpg()
+      tpg_num = target.get_default_tpg().fetch_tpg_number()
+      printf("tpg_num is %d.\n",tpg_num)
+      luns = target.get_default_tpg.get_luns_array()
+      p luns
       @target_name_input_field = TargetNameInput.new(target_name)
       #just use a empty string here to adapt the string parameter requirement
       @target_identifier_input_field = TargetIdentifierInput.new("")
-      @target_portal_group_field = PortalGroupInput.new(2)
+      @target_portal_group_field = PortalGroupInput.new(tpg_num)
       @target_port_num_field = TargetPortNumberInput.new(7260)
     end
     @IP_selsection_box = IpSelectionComboBox.new
     @target_bind_all_ip_checkbox = BindAllIP.new
     @use_login_auth = UseLoginAuth.new
-    @lun_table_widget = LUNsTableWidget.new
+    @lun_table_widget = LUNsTableWidget.new(luns)
   end
   
   def contents
@@ -725,6 +737,7 @@ class TargetsTableWidget < CWM::CustomWidget
       when :edit
         puts "Clicked Edit button!"
         target = @target_table.get_selected()
+        p target
         @edit_target_page = AddTargetWidget.new(target[1])
         contents = VBox(@edit_target_page,HStretch(),VStretch())
         Yast::Wizard.CreateDialog
@@ -747,25 +760,25 @@ class TargetsTableWidget < CWM::CustomWidget
 end
 
 class LUNTable < CWM::Table
-  def initialize(target_name)
+  def initialize(init_luns)
     #puts "initialize a LUNTable"
     #p caller
     # @luns will store all luns exsisted and will be created
-    @luns = Array.new
+    @luns = init_luns
     # @luns_add will store the luns will be created, will not store any exsisted luns.
     @luns_added = Array.new
-    @luns = generate_items()
+    #@luns = generate_items()
   end
 
   def generate_items
-    puts "generate_items is called.\n"
+    p "generate_items is called."
     items_array = Array.new
-    #$target_data.fetch_target
-
-    #@targets_names.each do |elem|
-      #items_array.push([rand(9999), elem, 1 , "Enabled"])
-    #end
-    return items_array
+    if @luns != nil
+      return @luns
+    else
+      @luns = Array.new
+    end
+    return @luns
   end
 
   def header
@@ -773,8 +786,7 @@ class LUNTable < CWM::Table
   end
 
   def items
-    @luns = generate_items()
-    return @luns
+    @luns
   end
 
   def get_selected
@@ -895,9 +907,9 @@ class LUNsTableWidget < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize
+  def initialize(luns)
     self.handle_all_events = true
-    @lun_table = LUNTable.new("test")
+    @lun_table = LUNTable.new(luns)
     @lun_details = LUNDetailsWidget.new
   end
 

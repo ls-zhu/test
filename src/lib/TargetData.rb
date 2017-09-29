@@ -163,9 +163,17 @@ class TPG
     @luns_list.store(lun_num, lun_name)
   end
 
-  #This function will return all luns in the TPG
+  #This function will return a Hast list contain all luns in the TPG
   def get_luns()
     return @luns_list
+  end
+
+  def get_luns_array()
+    luns = Array.new
+    @luns_list.each do |key,value|
+      luns.push(value)
+    end
+    return luns
   end
   
 end
@@ -178,11 +186,22 @@ class Target
     @target_name = name
     @tpg_hash_list = Hash.new
   end
+  #Hash opertion to store a TPG
   def store_tpg(tpg_number)
     @tpg_hash_list.store(tpg_number, TPG.new(tpg_number))
   end
+  #Hash operation to fetch a TPG
   def fetch_tpg(tpg_number)
      @tpg_hash_list.fetch(tpg_number)
+  end
+
+  #For now, Yast only support the case that only has one TPG, this function will return the only TPG,
+  # if there are more than one TPG in the target, it will return the first one.
+  def get_default_tpg()
+    @tpg_hash_list.each do |key,value|
+      return value
+    end
+
   end
   def fetch_target_name()
     @target_name
@@ -419,15 +438,12 @@ class TargetData
         lun_num = lun_num_tmp[2,lun_num_tmp.length]
         #puts lun_num
         lun_name_tmp = @re_lun_name.match(line).to_s
-        lun_name = lun_name_tmp[1,lun_name_tmp.length-2]
+        lun_name = lun_name_tmp[lun_name_tmp.index("/") + 1,lun_name_tmp.length-2]
         #lun_num_int is a number like 1,3,57.
         lun_num_int = lun_num[3,lun_num.length]
         lun_path_tmp = @re_lun_path.match(line).to_s
         lun_path = lun_path_tmp[1,lun_path_tmp.length-2]
-        #p lun_num_int
-        #p lun_path
         @current_tpg.store_lun(lun_num,[rand(9999), lun_num_int, lun_name, lun_path, File.ftype(lun_path)])
-        p @current_tpg.get_luns()
       end
     
     end # end of @target_outout.each do |line|
@@ -445,5 +461,11 @@ class TargetData
     names = Array.new
     names = @targets_list.get_target_names()
     return names
+  end
+
+  #This function will return the Hash list target_list
+  def get_target_list()
+    list = @targets_list
+    return list
   end
 end
