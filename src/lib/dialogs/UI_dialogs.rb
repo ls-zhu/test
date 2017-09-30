@@ -729,11 +729,11 @@ class TargetsTableWidget < CWM::CustomWidget
     case event["ID"]
       when :add
         puts "Clicked Add button!"
+        @add_target_page = AddTargetWidget.new(nil)
         contents = VBox(@add_target_page,HStretch(),VStretch())
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
         Yast::Wizard.CloseDialog
-        @add_target_page = AddTargetWidget.new(nil)
       when :edit
         puts "Clicked Edit button!"
         target = @target_table.get_selected()
@@ -767,7 +767,7 @@ class LUNTable < CWM::Table
     @luns = init_luns
     # @luns_add will store the luns will be created, will not store any exsisted luns.
     @luns_added = Array.new
-    #@luns = generate_items()
+    @luns = generate_items()
   end
 
   def generate_items
