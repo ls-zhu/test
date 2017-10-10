@@ -889,7 +889,144 @@ class LUNTable < CWM::Table
   end
 end
 
+
+class LunNumInput < CWM::IntField
+  def initialize(num)
+    @config = num
+  end
+
+  def label
+    _("LUN Number")
+  end
+
+  def init
+    self.value = @config
+  end
+
+  def store
+    @config = value
+  end
+
+  def minimum
+    return 0
+  end
+end
+
+class LUNPathInput < CWM::InputField
+  def initialize(str)
+    @config = str
+  end
+
+  def label
+    _("LUN Path")
+  end
+
+  def validate
+    if value.empty?
+      Yast::UI.SetFocus(Id(widget_id))
+      Yast::Popup.Error(_("LUN path cannot be empty."))
+      false
+    else
+      true
+    end
+  end
+
+  def init
+    self.value = @config
+  end
+
+  def store
+    @config = value
+  end
+end
+
+class LunNameInput < CWM::InputField
+  def initialize(str)
+    @config = str
+  end
+
+  def label
+    _("LUN Name(auto generated when empty)")
+  end
+
+  def validate
+
+  end
+
+  def init
+    self.value = @config
+  end
+
+  def store
+    @config = value
+  end
+end
+
+#This widget contains Lun path input and lun path browsing
+class LUNPathEdit < CWM::CustomWidget
+  def initialize
+    @lun_path_input = LUNPathInput.new("test")
+  end
+
+  def contents
+    HBox(
+        @lun_path_input,
+        PushButton(Id(:browse), _("Browse"))
+    )
+  end
+
+  def store
+
+  end
+
+  def validate
+
+  end
+
+  def help
+
+  end
+
+end
+
+#This is a class to config LUN path, number and name, used in LUNDetailsWidget contents
+class LUNConfig < CWM::CustomWidget
+  def initialize
+    @lun_num_input = LunNumInput.new(0)
+    @lun_path_edit = LUNPathEdit.new
+    @lun_name_input = LunNameInput.new(nil)
+  end
+
+  def contents
+    VBox(
+        @lun_num_input,
+        @lun_path_edit,
+        @lun_name_input,
+        HBox(
+            PushButton(Id(:cancel), _("Cancel")),
+            PushButton(Id(:ok), _("OK")),
+        )
+    )
+  end
+
+  def store
+
+  end
+
+  def validate
+
+  end
+
+  def help
+
+  end
+
+end
+
 class LUNDetailsWidget < CWM::Dialog
+  def initialize
+    @lun_config = LUNConfig.new
+  end
   def title
     return "Test Dialog"
   end
@@ -903,7 +1040,7 @@ class LUNDetailsWidget < CWM::Dialog
 
   def contents
     VBox(
-
+        @lun_config,
     )
   end
 
@@ -920,12 +1057,7 @@ class LUNDetailsWidget < CWM::Dialog
         MinSize(50, 18, ReplacePoint(Id(:contents), Empty())),
         VSpacing(1),
         VStretch(),
-        ButtonBox(
-            PushButton(Id(:help),  Opt(:helpButton), Yast::Label.HelpButton),
-            PushButton(Id(:ok), Opt(:default), Yast::Label.OKButton),
-            PushButton(Id(:cancel), Yast::Label.CancelButton)
         )
-    )
   end
 end
 
