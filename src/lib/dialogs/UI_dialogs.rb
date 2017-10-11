@@ -910,6 +910,10 @@ class LunNumInput < CWM::IntField
   def minimum
     return 0
   end
+
+  def get_value
+    return @config
+  end
 end
 
 class LUNPathInput < CWM::InputField
@@ -938,6 +942,14 @@ class LUNPathInput < CWM::InputField
   def store
     @config = value
   end
+
+  def get_value
+    return @config
+  end
+
+  def set_value(path)
+    value = path
+  end
 end
 
 class LunNameInput < CWM::InputField
@@ -960,11 +972,21 @@ class LunNameInput < CWM::InputField
   def store
     @config = value
   end
+
+  def get_value
+    return @config
+  end
 end
 
 #This widget contains Lun path input and lun path browsing
 class LUNPathEdit < CWM::CustomWidget
+  include Yast
+  include Yast::I18n
+  include Yast::UIShortcuts
+  include Yast::Logger
   def initialize
+    self.handle_all_events = true
+    @path = nil
     @lun_path_input = LUNPathInput.new("test")
   end
 
@@ -975,12 +997,34 @@ class LUNPathEdit < CWM::CustomWidget
     )
   end
 
+  def get_value
+    return @lun_path_input.value
+  end
+
   def store
 
   end
 
   def validate
 
+  end
+
+  def handle(event)
+    case event["ID"]
+      when :browse
+        file = UI.AskForExistingFile("/", "", _("Select a file or device"))
+        if file !=nil
+          @path = file
+          puts file
+          @lun_path_input.set_value(file)
+
+          #luns = @lun_table.get_luns()
+          #lun_number = rand(100)
+          # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
+          #lun_name = file[1,file.length].gsub(/\//,"_")
+          #@lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
+        end
+    end
   end
 
   def help
@@ -992,7 +1036,7 @@ end
 #This is a class to config LUN path, number and name, used in LUNDetailsWidget contents
 class LUNConfig < CWM::CustomWidget
   def initialize
-    @lun_num_input = LunNumInput.new(0)
+    @lun_num_input = LunNumInput.new(66)
     @lun_path_edit = LUNPathEdit.new
     @lun_name_input = LunNameInput.new(nil)
   end
@@ -1015,6 +1059,9 @@ class LUNConfig < CWM::CustomWidget
 
   def validate
     puts "validate is called."
+    printf("lun num is %d.\n", @lun_num_input.get_value)
+    printf("lun path is %s.\n", @lun_path_edit.get_value)
+    printf("lun name is %s.\n", @lun_name_input.get_value)
   end
 
   def handle
