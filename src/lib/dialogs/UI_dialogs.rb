@@ -1010,11 +1010,15 @@ class LUNConfig < CWM::CustomWidget
   end
 
   def store
-
+    puts "store is called."
   end
 
   def validate
+    puts "validate is called."
+  end
 
+  def handle
+    puts "handle is called."
   end
 
   def help

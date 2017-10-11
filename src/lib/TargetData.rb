@@ -272,7 +272,7 @@ class TargetData
     #match lun number like lun0, lun1, lun2....
     @re_lun_num = Regexp.new(/\-\slun\d+\s/)
     #match lun name like [fileio/iscsi_file1 or [block/iscsi_sdb
-    @re_lun_name = Regexp.new(/\[(fileio|block)\/[\w\_\d]+\s/)
+    @re_lun_name = Regexp.new(/\[(fileio|block)\/[\w\_\-\d]+\s/)
     #match lun patch like:(/home/lszhu/target1.raw) or (/dev/sdb)
     @re_lun_path = Regexp.new(/[(]\/(\w|\.|\/)+[)]/)
 
@@ -437,8 +437,13 @@ class TargetData
         lun_num_tmp = @re_lun_num.match(line).to_s
         lun_num = lun_num_tmp[2,lun_num_tmp.length]
         #puts lun_num
-        lun_name_tmp = @re_lun_name.match(line).to_s
-        lun_name = lun_name_tmp[lun_name_tmp.index("/") + 1,lun_name_tmp.length-2]
+        #lun_name_tmp = @re_lun_name.match(line).to_s
+        #lun_name_tmp = line[line.index("["),line.index("(")]
+        #puts lun_name_tmp
+        #lun_name = lun_name_tmp[lun_name_tmp.index("/") + 1,lun_name_tmp.length-2]
+        lun_name_tmp = line[line.index("[")+1 .. line.index("(")-2]
+        puts lun_name_tmp
+        lun_name = lun_name_tmp[lun_name_tmp.index("/")+1 .. lun_name_tmp.length]
         #lun_num_int is a number like 1,3,57.
         lun_num_int = lun_num[3,lun_num.length]
         lun_path_tmp = @re_lun_path.match(line).to_s
