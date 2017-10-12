@@ -896,7 +896,7 @@ class LunNumInput < CWM::IntField
   end
 
   def label
-    _("LUN Number")
+    _("LUN Number(left '-1' here to auto generate)")
   end
 
   def init
@@ -908,11 +908,11 @@ class LunNumInput < CWM::IntField
   end
 
   def minimum
-    return 0
+    return -1
   end
 
   def get_value
-    return @config
+    return self.value
   end
 end
 
@@ -944,11 +944,11 @@ class LUNPathInput < CWM::InputField
   end
 
   def get_value
-    return @config
+    return self.value
   end
 
   def set_value(path)
-    value = path
+    self.value = path
   end
 end
 
@@ -974,7 +974,7 @@ class LunNameInput < CWM::InputField
   end
 
   def get_value
-    return @config
+    return self.value
   end
 end
 
@@ -1036,7 +1036,7 @@ end
 #This is a class to config LUN path, number and name, used in LUNDetailsWidget contents
 class LUNConfig < CWM::CustomWidget
   def initialize
-    @lun_num_input = LunNumInput.new(66)
+    @lun_num_input = LunNumInput.new(nil)
     @lun_path_edit = LUNPathEdit.new
     @lun_name_input = LunNameInput.new(nil)
   end
