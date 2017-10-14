@@ -526,7 +526,6 @@ class AddTargetWidget < CWM::CustomWidget
       @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
       @target_portal_group_field = PortalGroupInput.new(1)
       @target_port_num_field = TargetPortNumberInput.new(3260)
-      @target_name = @target_name_input_field.value.to_s + ":" + @target_identifier_input_field.value.to_s
     else
       @mode = "edit"
       printf("Editing target %s.\n",target_name)
@@ -539,7 +538,6 @@ class AddTargetWidget < CWM::CustomWidget
       luns = target.get_default_tpg.get_luns_array()
       p luns
       @target_name_input_field = TargetNameInput.new(target_name)
-      @target_name = @target_name_input_field.value.to_s
       #just use a empty string here to adapt the string parameter requirement
       @target_identifier_input_field = TargetIdentifierInput.new("")
       @target_portal_group_field = PortalGroupInput.new(tpg_num)
@@ -549,8 +547,7 @@ class AddTargetWidget < CWM::CustomWidget
     @IP_selsection_box = IpSelectionComboBox.new
     @target_bind_all_ip_checkbox = BindAllIP.new
     @use_login_auth = UseLoginAuth.new
-    #also send target_name, used in create / delete luns
-    @lun_table_widget = LUNsTableWidget.new(@target_name, luns)
+    @lun_table_widget = LUNsTableWidget.new(luns)
   end
   
   def contents
@@ -577,6 +574,12 @@ class AddTargetWidget < CWM::CustomWidget
     #set_target_name()
     cmd = "targetcli"
     p1 = "iscsi/ create"
+    if @target_name_input_field.value.bytesize > @iscsi_name_length_max
+      @target_name = @target_name_input_field.value
+    else
+      @target_name = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
+    end
+
     #TODO: Add error handling here, exceptions!
     #TODO: Update Target table after add / remove targets
     ret = Yast::Execute.locally(cmd, p1, @target_name, stdout: :capture)
@@ -597,6 +600,8 @@ class AddTargetWidget < CWM::CustomWidget
       if lun[4] == "file"
         p2 = "/backstores/fileio/" + lun[3]
       end
+      #TODO: Add error handling here, exceptions!
+      #TODO: Update Target table after add / remove targets
       ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
     end
   end
@@ -1047,8 +1052,7 @@ end
 
 #This is a class to config LUN path, number and name, used in LUNDetailsWidget contents
 class LUNConfig < CWM::CustomWidget
-  def initialize(target_name)
-    @target_name = target_name
+  def initialize()
     @lun_num_input = LunNumInput.new(nil)
     @lun_path_edit = LUNPathEdit.new
     @lun_name_input = LunNameInput.new(nil)
@@ -1075,7 +1079,6 @@ class LUNConfig < CWM::CustomWidget
     printf("lun num is %d.\n", @lun_num_input.get_value)
     printf("lun path is %s.\n", @lun_path_edit.get_value)
     printf("lun name is %s.\n", @lun_name_input.get_value)
-    puts @target_name
   end
 
   def handle
@@ -1089,8 +1092,8 @@ class LUNConfig < CWM::CustomWidget
 end
 
 class LUNDetailsWidget < CWM::Dialog
-  def initialize(target_name)
-    @lun_config = LUNConfig.new(target_name)
+  def initialize()
+    @lun_config = LUNConfig.new()
   end
   def title
     return "Test Dialog"
@@ -1132,13 +1135,10 @@ class LUNsTableWidget < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize(target_name, luns)
+  def initialize(luns)
     self.handle_all_events = true
-    @target_name = target_name
-    puts "got target name"
-    puts @target_name
     @lun_table = LUNTable.new(luns)
-    @lun_details = LUNDetailsWidget.new(target_name)
+    @lun_details = LUNDetailsWidget.new()
   end
 
   def contents
