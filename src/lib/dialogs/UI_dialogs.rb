@@ -1079,6 +1079,10 @@ class LUNConfig < CWM::CustomWidget
     printf("lun num is %d.\n", @lun_num_input.get_value)
     printf("lun path is %s.\n", @lun_path_edit.get_value)
     printf("lun name is %s.\n", @lun_name_input.get_value)
+    #lun_number = rand(100)
+    # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
+    #lun_name = file[1,file.length].gsub(/\//,"_")
+    #@lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
   end
 
   def handle
@@ -1127,6 +1131,11 @@ class LUNDetailsWidget < CWM::Dialog
         VStretch(),
         )
   end
+
+  def run
+    super
+    return "1234"
+  end
 end
 
 
@@ -1164,9 +1173,8 @@ class LUNsTableWidget < CWM::CustomWidget
     puts event
     case event["ID"]
       when :edit
-        @lun_details.run
-        #contents = VBox(Heading(_("Disk order settings")),HStretch(),VStretch())
-        #Yast::UI.OpenDialog(contents)
+        ret = @lun_details.run()
+        puts ret
       when :add
         file = UI.AskForExistingFile("/", "", _("Select a file or device"))
         if file !=nil
