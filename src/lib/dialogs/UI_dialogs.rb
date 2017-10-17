@@ -1015,7 +1015,17 @@ class LUNPathEdit < CWM::CustomWidget
   end
 
   def validate
-
+    file = @lun_path_input.value.to_s
+    if File.exist?(file) == false
+      Yast::Popup.Error(_("The file does not exist!"))
+      return false
+    end
+    file_type = File.ftype(file)
+    if (file_type != "blockSpecial") || (file_type != "file")
+      Yast::Popup.Error(_("Please provide a normal file or a block device."))
+      return false
+    end
+    return true
   end
 
   def handle(event)
@@ -1056,6 +1066,7 @@ class LUNConfig < CWM::CustomWidget
     @lun_num_input = LunNumInput.new(nil)
     @lun_path_edit = LUNPathEdit.new
     @lun_name_input = LunNameInput.new(nil)
+    @lun_info = Array.new()
   end
 
   def contents
@@ -1076,9 +1087,13 @@ class LUNConfig < CWM::CustomWidget
 
   def validate
     puts "validate is called."
-    printf("lun num is %d.\n", @lun_num_input.get_value)
-    printf("lun path is %s.\n", @lun_path_edit.get_value)
-    printf("lun name is %s.\n", @lun_name_input.get_value)
+    #printf("lun num is %d.\n", @lun_num_input.get_value)
+    #printf("lun name is %s.\n", @lun_name_input.get_value)
+    #printf("lun path is %s.\n", @lun_path_edit.get_value)
+    @lun_info.push(@lun_num_input.get_value)
+    @lun_info.push(@lun_name_input.get_value)
+    @lun_info.push(@lun_path_edit.get_value)
+
     #lun_number = rand(100)
     # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
     #lun_name = file[1,file.length].gsub(/\//,"_")
@@ -1089,6 +1104,9 @@ class LUNConfig < CWM::CustomWidget
     puts "handle is called."
   end
 
+  def get_lun_info()
+    return @lun_info
+  end
   def help
 
   end
@@ -1134,7 +1152,7 @@ class LUNDetailsWidget < CWM::Dialog
 
   def run
     super
-    return "1234"
+    return @lun_config.get_lun_info
   end
 end
 
@@ -1174,7 +1192,13 @@ class LUNsTableWidget < CWM::CustomWidget
     case event["ID"]
       when :edit
         ret = @lun_details.run()
-        puts ret
+        lun_number = ret[0]
+        lun_name = ret[1]
+        file = ret[2]
+        if File.exist?(file) == true
+         @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
+        end
+        #puts ret
       when :add
         file = UI.AskForExistingFile("/", "", _("Select a file or device"))
         if file !=nil
