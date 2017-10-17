@@ -1021,7 +1021,7 @@ class LUNPathEdit < CWM::CustomWidget
       return false
     end
     file_type = File.ftype(file)
-    if (file_type != "blockSpecial") || (file_type != "file")
+    if (file_type != "blockSpecial") && (file_type != "file")
       Yast::Popup.Error(_("Please provide a normal file or a block device."))
       return false
     end
