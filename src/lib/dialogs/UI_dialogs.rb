@@ -1018,11 +1018,13 @@ class LUNPathEdit < CWM::CustomWidget
     file = @lun_path_input.value.to_s
     if File.exist?(file) == false
       Yast::Popup.Error(_("The file does not exist!"))
+      @lun_path_input.value = nil
       return false
     end
     file_type = File.ftype(file)
     if (file_type != "blockSpecial") && (file_type != "file")
       Yast::Popup.Error(_("Please provide a normal file or a block device."))
+      @lun_path_input.value = nil
       return false
     end
     return true
@@ -1195,7 +1197,7 @@ class LUNsTableWidget < CWM::CustomWidget
         lun_number = ret[0]
         lun_name = ret[1]
         file = ret[2]
-        if File.exist?(file) == true
+        if (File.exist?(file) == true) && (file != nil)
          @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
         end
         #puts ret
