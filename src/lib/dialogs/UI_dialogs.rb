@@ -317,7 +317,9 @@ end
 
 class TargetNameInput < CWM::InputField
   def initialize(str)
+    printf("TargetName got default value %s.\n", str)
     @config = str
+    self.value = str
     @iscsi_name_length_max = 233
   end
 
@@ -325,28 +327,41 @@ class TargetNameInput < CWM::InputField
     _("Target")
   end
 
- def validate
-   if value.empty?
-     Yast::UI.SetFocus(Id(widget_id))
-     Yast::Popup.Error(_("Target name cannot be empty."))
-     false
-   elsif value.bytesize > @iscsi_name_length_max
-     Yast::UI.SetFocus(Id(widget_id))
-     Yast::Popup.Error(_("Target name cannot be longger than 223 bytes."))
-     false
-   else
-     true
-   end
- end
+  def validate
+    puts "Validate in TargetNameInput is called."
+    @config.value = self.value
+    if self.value.empty?
+      Yast::UI.SetFocus(Id(widget_id))
+      Yast::Popup.Error(_("Target name cannot be empty."))
+      false
+    elsif self.value.bytesize > @iscsi_name_length_max
+      Yast::UI.SetFocus(Id(widget_id))
+      Yast::Popup.Error(_("Target name cannot be longger than 223 bytes."))
+      false
+    else
+      true
+    end
+    printf("In TargetNameInput, value is %d.\n",value)
+  end
  
   def init
-    self.value = @config
-    printf("TargeteName InputField init, got default value %s.\n",@config)
+   self.value = @config
+    #printf("TargeteName InputField init, got default value %s.\n",@config)
   end
 
   def store
-    @config = value
+    puts "STORE is called."
     printf("TargetName Inputfield will store the value %s.\n", @config)
+    @config.value = value
+   # pinttf("Value of TargetName is %s.\n",self.value)
+  end
+
+  def get_value
+    #puts "get_value"
+    #puts @config
+    #puts value
+    #puts self.value
+    return value()
   end
 end
 
@@ -359,14 +374,23 @@ class TargetIdentifierInput < CWM::InputField
     _("Identifier")
   end
 
+  def validate
+    self.value = @config
+    printf("In TargetIndentifierInput Validate, self.value is %s.\n",self.value)
+  end
+
   def init
     self.value = @config
     #printf("Target Identifier InputField init, got default value %s.\n",@config)
   end
 
   def store
-    @config = value
+    @config = self.value
     #printf("Target Identifier Inputfield will store the value %s.\n", @config)
+  end
+
+  def get_value
+    return self.value
   end
 end
 
@@ -536,7 +560,7 @@ class AddTargetWidget < CWM::CustomWidget
       tpg_num = target.get_default_tpg().fetch_tpg_number()
       printf("tpg_num is %d.\n",tpg_num)
       luns = target.get_default_tpg.get_luns_array()
-      p luns
+     # p luns
       @target_name_input_field = TargetNameInput.new(target_name)
       #just use a empty string here to adapt the string parameter requirement
       @target_identifier_input_field = TargetIdentifierInput.new("")
@@ -569,6 +593,32 @@ class AddTargetWidget < CWM::CustomWidget
     )
   end
 
+  def validate
+    puts "validate in AddTarget Widget called."
+    if @mode == "new"
+      cmd = "targetcli"
+      p1 = "iscsi/ create"
+      puts @target_name_input_field.get_value
+      puts @target_identifier_input_field.get_value
+      if @target_name_input_field.get_value.bytesize > @iscsi_name_length_max
+        @target_name = @target_name_input_field.get_value
+      else
+        @target_name = @target_name_input_field.get_value + ":" + @target_identifier_input_field.get_value
+      end
+
+      #TODO: Update Target table after add / remove targets
+      begin
+        Cheetah.run(cmd, p1, @target_name)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          err_msg = _("Can not create the target with target name: ") + \
+            @target_name + _(", plese check target name.\n") + \
+            _("Additional information: ") + e.stderr
+          Yast::Popup.Error(err_msg)
+        end
+      end
+    end
+  end
 
   def create_target
     #set_target_name()
@@ -580,7 +630,6 @@ class AddTargetWidget < CWM::CustomWidget
       @target_name = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
     end
 
-    #TODO: Add error handling here, exceptions!
     #TODO: Update Target table after add / remove targets
     ret = Yast::Execute.locally(cmd, p1, @target_name, stdout: :capture)
   end
@@ -608,23 +657,25 @@ class AddTargetWidget < CWM::CustomWidget
 
   def store
     puts "Store in AddTargetWidget is called."
-    @lun_table_widget.create_luns_backstores
-    if @mode == "new"
-      self.create_target
-      self.create_luns
-    end
+#    @lun_table_widget.create_luns_backstores
+#    if @mode == "new"
+#      self.create_target
+#      self.create_luns
+#    end
   end
 
   def handle(event)
     puts event 
     case event["ID"]
       when :next
+        #puts "In next:"
+        #puts @target_name_input_field.value
         #puts "clicked Next."
         #puts @target_name_input_field.value
         #self.prepare_luns_list
-        if @target_portal_group_field.value.to_s.empty?
-          self.popup_warning_dialog("Error", "Portal group can not be empty")
-        end
+        #if @target_portal_group_field.value.to_s.empty?
+         # self.popup_warning_dialog("Error", "Portal group can not be empty")
+        #end
     end
     nil
   end
@@ -682,11 +733,11 @@ class TargetTable < CWM::Table
       #printf("id is %d.\n", id)
       if elem[0] == id
         #printf("elem[0] is %d.\n", elem[0]);
-        p elem
+       # p elem
       end
       @targets.delete_if{|elem| elem[0] == id}
     end
-       p @targets
+       #p @targets
        update_table(@targets)
   end
   
@@ -744,13 +795,13 @@ class TargetsTableWidget < CWM::CustomWidget
       when :edit
         puts "Clicked Edit button!"
         target = @target_table.get_selected()
-        p target
+        #p target
         @edit_target_page = AddTargetWidget.new(target[1])
         contents = VBox(@edit_target_page,HStretch(),VStretch())
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Edit iSCSI Target"))
         Yast::Wizard.CloseDialog
-        p target
+        #p target
       when :delete
         id = @target_table.get_selected()
         puts "Clicked Delete button"
@@ -778,7 +829,7 @@ class LUNTable < CWM::Table
   end
 
   def generate_items
-    p "generate_items is called."
+    #p "generate_items is called."
     items_array = Array.new
     if @luns != nil
       return @luns
@@ -868,6 +919,13 @@ class LUNTable < CWM::Table
       end
     end
     return true
+  end
+
+  def store
+    p "In lun_table store:"
+    p @luns
+    p @luns_added
+
   end
 
   def do_create_luns_backstore(lun)
