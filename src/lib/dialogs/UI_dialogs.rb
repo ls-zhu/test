@@ -622,7 +622,6 @@ class AddTargetWidget < CWM::CustomWidget
         #puts "clicked Next."
         #puts @target_name_input_field.value
         #self.prepare_luns_list
-        
         if @target_portal_group_field.value.to_s.empty?
           self.popup_warning_dialog("Error", "Portal group can not be empty")
         end
@@ -689,7 +688,6 @@ class TargetTable < CWM::Table
     end
        p @targets
        update_table(@targets)
-       
   end
   
   def update_table(items)
@@ -729,7 +727,7 @@ class TargetsTableWidget < CWM::CustomWidget
          PushButton(Id(:add), _("Add")),
          PushButton(Id(:edit), _("Edit")),
          PushButton(Id(:delete), _("Delete"))
-       )
+        )
   )
   end
 
@@ -1197,7 +1195,7 @@ class LUNsTableWidget < CWM::CustomWidget
         lun_number = ret[0]
         lun_name = ret[1]
         file = ret[2]
-        if (File.exist?(file) == true) && (file != nil)
+        if (file != nil) && (File.exist?(file) == true)
          @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
         end
         #puts ret
