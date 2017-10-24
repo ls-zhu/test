@@ -329,7 +329,7 @@ class TargetNameInput < CWM::InputField
 
   def validate
     puts "Validate in TargetNameInput is called."
-    @config.value = self.value
+    @config = self.value
     if self.value.empty?
       Yast::UI.SetFocus(Id(widget_id))
       Yast::Popup.Error(_("Target name cannot be empty."))
@@ -341,7 +341,7 @@ class TargetNameInput < CWM::InputField
     else
       true
     end
-    printf("In TargetNameInput, value is %d.\n",value)
+    printf("In TargetNameInput, value is %s.\n",value)
   end
  
   def init
@@ -615,8 +615,10 @@ class AddTargetWidget < CWM::CustomWidget
             @target_name + _(", plese check target name.\n") + \
             _("Additional information: ") + e.stderr
           Yast::Popup.Error(err_msg)
+          return false
         end
       end
+      return true
     end
   end
 
