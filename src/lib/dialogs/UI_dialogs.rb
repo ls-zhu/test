@@ -676,6 +676,10 @@ class AddTargetWidget < CWM::CustomWidget
 #    end
   end
 
+  def opt
+    [:notify]
+  end
+
   def handle(event)
     puts event 
     case event["ID"]
