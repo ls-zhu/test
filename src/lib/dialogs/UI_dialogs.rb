@@ -538,6 +538,8 @@ class AddTargetWidget < CWM::CustomWidget
     @iscsi_name_length_max = 223
     @back_storage = nil
     @target_name = nil
+    #@target_info used to return target name, portal number, etc to upper level class.
+    @target_info = Array.new
     #luns contains the luns would be shown in the lun table
     luns = nil
     #if mode == "new", need to create targets and luns, if mode == "edit", just change the target config
@@ -593,6 +595,11 @@ class AddTargetWidget < CWM::CustomWidget
     )
   end
 
+  def get_target_info
+    info = @target_info
+    return info
+  end
+
   def validate
     puts "validate in AddTarget Widget called."
     if @mode == "new"
@@ -618,9 +625,12 @@ class AddTargetWidget < CWM::CustomWidget
           return false
         end
       end
+      @target_info.push(@target_name)
+      @target_info.push(@target_portal_group_field.value)
       return true
     end
   end
+
 
   def create_target
     #set_target_name()
@@ -694,6 +704,7 @@ class TargetTable < CWM::Table
     #p @targets_names
   end
 
+
   def generate_items
     #puts "generate_items is called.\n"
     items_array = Array.new
@@ -724,8 +735,11 @@ class TargetTable < CWM::Table
     return nil
   end
 
- #this function will add a target in the table, the parameter item is an array
+ #this function will add a target in the table, the parameter item is the target name
   def add_target_item(item)
+    @targets.push([rand(9999), item, 1 , "Enabled"])
+    p @targets
+    update_table(@targets)
   end
 
   #this function will remove a target from the table.
@@ -742,7 +756,7 @@ class TargetTable < CWM::Table
        #p @targets
        update_table(@targets)
   end
-  
+
   def update_table(items)
     #@targets.push([1, "iqn.2017-04.suse.com.test", 1, "Enabled"])
     self.change_items(items)
@@ -764,6 +778,12 @@ class TargetsTableWidget < CWM::CustomWidget
     #p @target_table
     @add_target_page = AddTargetWidget.new(nil)
     @edit_target_page = nil
+    #target_info will store target name, portal, etc
+    @target_info = nil
+  end
+
+  def opt
+    [:notify]
   end
 
   def contents
@@ -776,10 +796,10 @@ class TargetsTableWidget < CWM::CustomWidget
            #]
        #),
        @target_table,
-       HBox(
-         PushButton(Id(:add), _("Add")),
-         PushButton(Id(:edit), _("Edit")),
-         PushButton(Id(:delete), _("Delete"))
+        HBox(
+            PushButton(Id(:add), _("Add")),
+            PushButton(Id(:edit), _("Edit")),
+            PushButton(Id(:delete), _("Delete"))
         )
   )
   end
@@ -793,6 +813,15 @@ class TargetsTableWidget < CWM::CustomWidget
         contents = VBox(@add_target_page,HStretch(),VStretch())
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
+        # @target_info[0] should be nil if target is not created succefully.
+        @target_info = @add_target_page.get_target_info()
+        puts "Got target_info:"
+        p @target_info
+        if
+          @target_info[0] != nil
+          target_name = @target_info[0]
+          @target_table.add_target_item(target_name)
+        end
         Yast::Wizard.CloseDialog
       when :edit
         puts "Clicked Edit button!"
