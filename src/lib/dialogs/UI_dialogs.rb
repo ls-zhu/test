@@ -792,14 +792,8 @@ class TargetsTableWidget < CWM::CustomWidget
 
   def contents
     VBox(
-      #Table(
         Id(:targets_table),
-         #Header("Targets", "Portal Group", "TPG Status"),
-           #[
-             #Item(Id(1), "iqn.2017-04.suse.com.lszhu.target.sn.abcdefghisdljhlshjl", 1,"Enabled"),
-           #]
-       #),
-       @target_table,
+        @target_table,
         HBox(
             PushButton(Id(:add), _("Add")),
             PushButton(Id(:edit), _("Edit")),
