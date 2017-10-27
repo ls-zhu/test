@@ -314,12 +314,13 @@ class TargetsTab < ::CWM::Tab
   end
 end
 
-
 class TargetNameInput < CWM::InputField
   def initialize(str)
-    printf("TargetName got default value %s.\n", str)
+    #printf("TargetName got default value %s.\n", str)
     @config = str
-    self.value = str
+    #This line would lead a failure in y2log:
+    #cwm/common_widgets.rb:37 UI::ChangeWidget failed: UI::ChangeWidget( `id ("TargetNameInput"), `Value, "iqn.2017-10.com.example" )
+    #self.value = str
     @iscsi_name_length_max = 233
   end
 
@@ -329,31 +330,31 @@ class TargetNameInput < CWM::InputField
 
   def validate
     puts "Validate in TargetNameInput is called."
-    @config = self.value
+    #@config = self.value
+    #self.value = @config
     if self.value.empty?
-      Yast::UI.SetFocus(Id(widget_id))
+      #Yast::UI.SetFocus(Id(widget_id))
       Yast::Popup.Error(_("Target name cannot be empty."))
-      false
+      return false
     elsif self.value.bytesize > @iscsi_name_length_max
-      Yast::UI.SetFocus(Id(widget_id))
+      #Yast::UI.SetFocus(Id(widget_id))
       Yast::Popup.Error(_("Target name cannot be longger than 223 bytes."))
-      false
-    else
-      true
+      return false
     end
     printf("In TargetNameInput, value is %s.\n",value)
+    return true
   end
- 
+
   def init
-   self.value = @config
+    self.value = @config
     #printf("TargeteName InputField init, got default value %s.\n",@config)
   end
 
   def store
-    puts "STORE is called."
-    printf("TargetName Inputfield will store the value %s.\n", @config)
+    #puts "STORE is called."
+    #printf("TargetName Inputfield will store the value %s.\n", @config)
     @config.value = value
-   # pinttf("Value of TargetName is %s.\n",self.value)
+    # pinttf("Value of TargetName is %s.\n",self.value)
   end
 
   def get_value
@@ -361,7 +362,7 @@ class TargetNameInput < CWM::InputField
     #puts @config
     #puts value
     #puts self.value
-    return value()
+    return self.value
   end
 end
 
@@ -421,8 +422,8 @@ class PortalGroupInput < CWM::IntField
 end
 
 class TargetPortNumberInput < CWM::IntField
-  def initialize(str)
-    @config = str.to_s
+  def initialize(int)
+    @config = int
   end
 
   def label
@@ -567,7 +568,7 @@ class AddTargetWidget < CWM::CustomWidget
       #just use a empty string here to adapt the string parameter requirement
       @target_identifier_input_field = TargetIdentifierInput.new("")
       @target_portal_group_field = PortalGroupInput.new(tpg_num)
-      @target_port_num_field = TargetPortNumberInput.new(7260)
+      @target_port_num_field = TargetPortNumberInput.new(3260)
     end
 
     @IP_selsection_box = IpSelectionComboBox.new
