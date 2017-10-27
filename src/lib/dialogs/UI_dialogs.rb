@@ -745,8 +745,9 @@ class TargetTable < CWM::Table
 
  #this function will add a target in the table, the parameter item is the target name
   def add_target_item(item)
+    @targets_names.push(item)
     @targets.push([rand(9999), item, 1 , "Enabled"])
-    p @targets
+    #p @targets
     update_table(@targets)
   end
 
@@ -767,6 +768,8 @@ class TargetTable < CWM::Table
 
   def update_table(items)
     #@targets.push([1, "iqn.2017-04.suse.com.test", 1, "Enabled"])
+    puts "in update_table, items are:"
+    p items
     self.change_items(items)
   end
 end
@@ -784,7 +787,7 @@ class TargetsTableWidget < CWM::CustomWidget
     @target_table = TargetTable.new
     #p "@target_table is"
     #p @target_table
-    @add_target_page = AddTargetWidget.new(nil)
+    @add_target_page = nil
     @edit_target_page = nil
     #target_info will store target name, portal, etc
     @target_info = nil
