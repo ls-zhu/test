@@ -353,7 +353,7 @@ class TargetNameInput < CWM::InputField
   def store
     #puts "STORE is called."
     #printf("TargetName Inputfield will store the value %s.\n", @config)
-    @config.value = value
+    @config = value
     # pinttf("Value of TargetName is %s.\n",self.value)
   end
 
@@ -378,6 +378,7 @@ class TargetIdentifierInput < CWM::InputField
   def validate
     self.value = @config
     printf("In TargetIndentifierInput Validate, self.value is %s.\n",self.value)
+    return true
   end
 
   def init
@@ -551,6 +552,7 @@ class AddTargetWidget < CWM::CustomWidget
       @mode = "new"
       @target_name_input_field = TargetNameInput.new("iqn." + date_str + ".com.example")
       @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
+      #@target_identifier_input_field = TargetIdentifierInput.new("123")
       @target_portal_group_field = PortalGroupInput.new(1)
       @target_port_num_field = TargetPortNumberInput.new(3260)
     else
@@ -631,6 +633,7 @@ class AddTargetWidget < CWM::CustomWidget
       return true
     end
   end
+
 
 
   def create_target
@@ -934,6 +937,7 @@ class LUNTable < CWM::Table
           return false
           break
       end
+      return true
     end
     #This loop will validate whether the lun is already in use
     @luns_added.each do |lun|
@@ -1057,7 +1061,7 @@ class LunNameInput < CWM::InputField
   end
 
   def validate
-
+    return true
   end
 
   def init
@@ -1186,6 +1190,7 @@ class LUNConfig < CWM::CustomWidget
     # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
     #lun_name = file[1,file.length].gsub(/\//,"_")
     #@lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
+    return true
   end
 
   def handle
