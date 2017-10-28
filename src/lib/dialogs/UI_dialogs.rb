@@ -671,19 +671,6 @@ class AddTargetWidget < CWM::CustomWidget
     end
   end
 
-  def store
-    puts "Store in AddTargetWidget is called."
-#    @lun_table_widget.create_luns_backstores
-#    if @mode == "new"
-#      self.create_target
-#      self.create_luns
-#    end
-  end
-
-  def opt
-    [:notify]
-  end
-
   def handle(event)
     puts event 
     case event["ID"]
@@ -703,18 +690,12 @@ end
 
 class TargetTable < CWM::Table
   def initialize()
-   # puts "initialize a TargetTable"
-    #p caller
     @targets = Array.new
     @targets_names = $target_data.get_target_names_array
-    @targets = generate_items()
-    #@targets.push([3, "iqn.2017-04.suse.com.lszhu", 1, "Enabled"])
-    #p @targets_names
   end
 
 
   def generate_items
-    #puts "generate_items is called.\n"
     items_array = Array.new
     @targets_names.each do |elem|
       items_array.push([rand(9999), elem, 1 , "Enabled"])
@@ -727,8 +708,10 @@ class TargetTable < CWM::Table
   end
 
   def items
-    #@targets = generate_items()
-    @targets
+    @targets = generate_items()
+    puts "in items"
+    p @targets_names
+    return @targets
   end
 
   def get_selected
@@ -743,13 +726,6 @@ class TargetTable < CWM::Table
     return nil
   end
 
- #this function will add a target in the table, the parameter item is the target name
-  def add_target_item(item)
-    @targets_names.push(item)
-    @targets.push([rand(9999), item, 1 , "Enabled"])
-    #p @targets
-    update_table(@targets)
-  end
 
   #this function will remove a target from the table.
   def remove_target_item(id)
@@ -762,16 +738,15 @@ class TargetTable < CWM::Table
       end
       @targets.delete_if{|elem| elem[0] == id}
     end
-       #p @targets
-       update_table(@targets)
+       update_table()
   end
 
-  def update_table(items)
-    #@targets.push([1, "iqn.2017-04.suse.com.test", 1, "Enabled"])
-    puts "in update_table, items are:"
-    p items
-    self.change_items(items)
+  def update_table()
+    $target_data.analyze()
+    @targets_names = $target_data.get_target_names_array
+    self.change_items(generate_items())
   end
+
 end
 
 
@@ -804,7 +779,7 @@ class TargetsTableWidget < CWM::CustomWidget
         HBox(
             PushButton(Id(:add), _("Add")),
             PushButton(Id(:edit), _("Edit")),
-            PushButton(Id(:delete), _("Delete"))
+            PushButton(Id(:delete), _("Delete")),
         )
   )
   end
@@ -813,21 +788,12 @@ class TargetsTableWidget < CWM::CustomWidget
     puts event
     case event["ID"]
       when :add
-        puts "Clicked Add button!"
         @add_target_page = AddTargetWidget.new(nil)
         contents = VBox(@add_target_page,HStretch(),VStretch())
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
-        # @target_info[0] should be nil if target is not created succefully.
-        @target_info = @add_target_page.get_target_info()
-        puts "Got target_info:"
-        p @target_info
-        if
-          @target_info[0] != nil
-          target_name = @target_info[0]
-          @target_table.add_target_item(target_name)
-        end
         Yast::Wizard.CloseDialog
+        @target_table.update_table()
       when :edit
         puts "Clicked Edit button!"
         target = @target_table.get_selected()
@@ -842,8 +808,7 @@ class TargetsTableWidget < CWM::CustomWidget
         id = @target_table.get_selected()
         puts "Clicked Delete button"
         printf("The selected value is %s.\n", id)
-       # @target_table.remove_target_item(id) 
-         
+       # @target_table.remove_target_item(id)
      end
      nil
   end

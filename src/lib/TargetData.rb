@@ -306,15 +306,16 @@ class TargetData
     # the command need to execute  and the result
     @cmd = nil
     @cmd_out = nil
-    #TODO: Need to add some error handling code here, like failed to start the service.
-    @target_outout = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
+    ##TODO: Need to add some error handling code here, like failed to start the service.
+    #@target_outout = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
     @targets_list = TargetList.new
     self.analyze
   end
 
 
   def analyze()
-    #puts "analyze() called.\n"
+    #TODO: Need to add some error handling code here, like failed to start the service.
+    @target_outout = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
     @target_outout.each do |line|
       #handle iqn targets here.
       if @re_iqn_target.match(line)
