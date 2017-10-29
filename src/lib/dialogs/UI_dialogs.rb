@@ -615,8 +615,6 @@ class AddTargetWidget < CWM::CustomWidget
       else
         @target_name = @target_name_input_field.get_value + ":" + @target_identifier_input_field.get_value
       end
-
-      #TODO: Update Target table after add / remove targets
       begin
         Cheetah.run(cmd, p1, @target_name)
       rescue Cheetah::ExecutionFailed => e
@@ -628,27 +626,12 @@ class AddTargetWidget < CWM::CustomWidget
           return false
         end
       end
-      @target_info.push(@target_name)
-      @target_info.push(@target_portal_group_field.value)
       return true
     end
   end
 
 
 
-  def create_target
-    #set_target_name()
-    cmd = "targetcli"
-    p1 = "iscsi/ create"
-    if @target_name_input_field.value.bytesize > @iscsi_name_length_max
-      @target_name = @target_name_input_field.value
-    else
-      @target_name = @target_name_input_field.value+":"+@target_identifier_input_field.value.to_s
-    end
-
-    #TODO: Update Target table after add / remove targets
-    ret = Yast::Execute.locally(cmd, p1, @target_name, stdout: :capture)
-  end
 
   #This function will create luns under tpg#N/luns from backstores
   #TODO: Add error handling here, exceptions!
