@@ -672,7 +672,7 @@ class AddTargetWidget < CWM::CustomWidget
   end
 
   def handle(event)
-    puts event 
+    #puts event 
     case event["ID"]
       when :next
         #puts "In next:"
@@ -709,8 +709,8 @@ class TargetTable < CWM::Table
 
   def items
     @targets = generate_items()
-    puts "in items"
-    p @targets_names
+    #puts "in items"
+    #p @targets_names
     return @targets
   end
 
@@ -785,7 +785,7 @@ class TargetsTableWidget < CWM::CustomWidget
   end
 
   def handle(event)
-    puts event
+    #puts event
     case event["ID"]
       when :add
         @add_target_page = AddTargetWidget.new(nil)
@@ -795,18 +795,19 @@ class TargetsTableWidget < CWM::CustomWidget
         Yast::Wizard.CloseDialog
         @target_table.update_table()
       when :edit
-        puts "Clicked Edit button!"
+        #puts "Clicked Edit button!"
         target = @target_table.get_selected()
-        #p target
-        @edit_target_page = AddTargetWidget.new(target[1])
-        contents = VBox(@edit_target_page,HStretch(),VStretch())
-        Yast::Wizard.CreateDialog
-        CWM.show(contents, caption: _("Edit iSCSI Target"))
-        Yast::Wizard.CloseDialog
-        #p target
+        if target != nil
+          #p target
+          @edit_target_page = AddTargetWidget.new(target[1])
+          contents = VBox(@edit_target_page,HStretch(),VStretch())
+          Yast::Wizard.CreateDialog
+          CWM.show(contents, caption: _("Edit iSCSI Target"))
+          Yast::Wizard.CloseDialog
+        end
       when :delete
         id = @target_table.get_selected()
-        puts "Clicked Delete button"
+        #puts "Clicked Delete button"
         printf("The selected value is %s.\n", id)
        # @target_table.remove_target_item(id)
      end
@@ -1248,8 +1249,17 @@ class LUNsTableWidget < CWM::CustomWidget
   def create_luns_backstores
     @lun_table.create_luns_backstore
   end
+
+  def opt
+    [:notify]
+  end
+
+  def validate
+    puts "Validate() in LunsTableWidget called.\n"
+    return true
+  end
   def handle(event)
-    puts event
+    #puts event
     case event["ID"]
       when :edit
         ret = @lun_details.run()
