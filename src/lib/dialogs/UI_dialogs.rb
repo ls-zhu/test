@@ -598,11 +598,6 @@ class AddTargetWidget < CWM::CustomWidget
     )
   end
 
-  def get_target_info
-    info = @target_info
-    return info
-  end
-
   def validate
     puts "validate in AddTarget Widget called."
     if @mode == "new"
