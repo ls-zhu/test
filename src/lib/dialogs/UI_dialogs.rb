@@ -651,6 +651,12 @@ class AddTargetWidget < CWM::CustomWidget
       @lun_table_widget.set_target_info(@target_name, target_tpg)
       return true
     end
+
+    if @mode == "edit"
+      #TODO: if there is no TPG for a target, we should add a default tpg=1 to the target. For example,
+      #TODO: (in above "new" mode), if users provided a tpg=2, we deleted the default tpg=1, but failed to
+      #TODO: create the new tpg=2, there whould be no TPGs there.
+    end
   end
 
 
