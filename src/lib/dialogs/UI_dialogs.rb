@@ -603,8 +603,8 @@ class AddTargetWidget < CWM::CustomWidget
     if @mode == "new"
       cmd = "targetcli"
       p1 = "iscsi/ create"
-      puts @target_name_input_field.get_value
-      puts @target_identifier_input_field.get_value
+      #puts @target_name_input_field.get_value
+      #puts @target_identifier_input_field.get_value
       if @target_name_input_field.get_value.bytesize > @iscsi_name_length_max
         @target_name = @target_name_input_field.get_value
       else
@@ -621,6 +621,7 @@ class AddTargetWidget < CWM::CustomWidget
           return false
         end
       end
+      @lun_table_widget.set_target_name(@target_name)
       return true
     end
   end
@@ -631,7 +632,7 @@ class AddTargetWidget < CWM::CustomWidget
   #This function will create luns under tpg#N/luns from backstores
   #TODO: Add error handling here, exceptions!
   def create_luns
-    p "create_luns called."
+    #p "create_luns called."
     luns = @lun_table_widget.get_new_luns
     #p luns
     cmd = "targetcli"
@@ -771,7 +772,6 @@ class TargetsTableWidget < CWM::CustomWidget
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
         Yast::Wizard.CloseDialog
-        @target_table.update_table()
       when :edit
         #puts "Clicked Edit button!"
         target = @target_table.get_selected()
@@ -788,8 +788,9 @@ class TargetsTableWidget < CWM::CustomWidget
         #puts "Clicked Delete button"
         printf("The selected value is %s.\n", id)
        # @target_table.remove_target_item(id)
-     end
-     nil
+    end
+    @target_table.update_table()
+    nil
   end
 
   def help
@@ -806,6 +807,13 @@ class LUNTable < CWM::Table
     # @luns_add will store the luns will be created, will not store any exsisted luns.
     @luns_added = Array.new
     @luns = generate_items()
+    @target_name = nil
+  end
+
+  def set_target_name(name)
+    @target_name = name
+    puts "in set_target_name"
+    p @target_name
   end
 
   def generate_items
@@ -903,9 +911,9 @@ class LUNTable < CWM::Table
   end
 
   def store
-    p "In lun_table store:"
-    p @luns
-    p @luns_added
+    #p "In lun_table store:"
+    #p @luns
+    #p @luns_added
 
   end
 
@@ -1073,7 +1081,7 @@ class LUNPathEdit < CWM::CustomWidget
         file = UI.AskForExistingFile("/", "", _("Select a file or device"))
         if file !=nil
           @path = file
-          puts file
+          #puts file
           @lun_path_input.set_value(file)
 
           #luns = @lun_table.get_luns()
@@ -1121,11 +1129,11 @@ class LUNConfig < CWM::CustomWidget
   end
 
   def store
-    puts "store is called."
+    #puts "store is called."
   end
 
   def validate
-    puts "validate is called."
+    #puts "validate is called."
     #printf("lun num is %d.\n", @lun_num_input.get_value)
     #printf("lun name is %s.\n", @lun_name_input.get_value)
     #printf("lun path is %s.\n", @lun_path_edit.get_value)
@@ -1141,7 +1149,7 @@ class LUNConfig < CWM::CustomWidget
   end
 
   def handle
-    puts "handle is called."
+    #puts "handle is called."
   end
 
   def get_lun_info()
@@ -1206,6 +1214,7 @@ class LUNsTableWidget < CWM::CustomWidget
     self.handle_all_events = true
     @lun_table = LUNTable.new(luns)
     @lun_details = LUNDetailsWidget.new()
+    @target_name = nil
   end
 
   def contents
@@ -1217,6 +1226,11 @@ class LUNsTableWidget < CWM::CustomWidget
          PushButton(Id(:delete), _("Delete"))
        )
   )
+  end
+
+  #This function pass target name from AddTargetWidget to lun table
+  def set_target_name(name)
+    @lun_table.set_target_name(name)
   end
 
   #This function will return new luns, aka the newly added luns which needed to be created in tpg#N/luns
