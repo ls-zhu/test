@@ -868,46 +868,17 @@ class LUNTable < CWM::Table
   def validate
     puts "validate() in LUN_table is called."
     #p @luns_added
-    #This loop will validate whether the lun is a block device or fileio, return false if others.
     @luns_added.each do |lun|
-      case lun[4]
-        when "characterSpecial"
-          Yast::Popup.Error(_("The selected storage is a character file, LUNs can only be fileio or block devices."))
-          self.table_remove_lun_item(lun[0])
-          return false
-          break
-        when "link"
-          Yast::Popup.Error(_("The selected storage is a link file, LUNs can only be fileio or block devices."))
-          self.table_remove_lun_item(lun[0])
-          return false
-          break
-        when "socket"
-          Yast::Popup.Error(_("The selected storage is a socket file, LUNs can only be fileio or block devices."))
-          self.table_remove_lun_item(lun[0])
-          return false
-          break
-        when "unknown"
-          Yast::Popup.Error(_("The selected file type is unknow, LUNs can only be fileio or block devices."))
-          self.table_remove_lun_item(lun[0])
-          return false
-          break
-      end
-      return true
-    end
-    #This loop will validate whether the lun is already in use
-    @luns_added.each do |lun|
-      #puts "Loop in validate() function"
-      #p lun
-      if $back_stores.validate_backstore_exist(lun[2])
-        #puts lun[2]
-        #puts "Detected an exsisted storeage in use"
-        err_msg = _("The selected backend storeage ") + lun[2] + _(" is already in use.")
-        Yast::Popup.Error(err_msg)
-        self.table_remove_lun_item(lun[0])
-        return false
+      cmd = "targetcli"
+      p1 = "iscsi/" + @target_name +"/tpg" + "1" + "/luns create storage_object=" + lun[3]
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        puts e.message
+        puts "Standard output: #{e.stdout}"
+        puts "Error ouptut:    #{e.stderr}"
       end
     end
-    return true
   end
 
   def store
