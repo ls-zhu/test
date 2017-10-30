@@ -621,7 +621,34 @@ class AddTargetWidget < CWM::CustomWidget
           return false
         end
       end
-      @lun_table_widget.set_target_name(@target_name)
+      target_tpg = @target_portal_group_field.value.to_s
+      if target_tpg != "1"
+        p1 = "iscsi/" + @target_name + "/ delete tag=1"
+        p2 = "iscsi/" + @target_name + "/ create tag=" + target_tpg
+        begin
+          Cheetah.run(cmd, p1)
+        rescue Cheetah::ExecutionFailed => e
+          if e.stderr != nil
+            err_msg = _("Target Portal Group number ") + target_tpg + _(" is provided to replace the defalult tpg") \
+            + _("Failed to delete the default tpg, please consider to re-create the target and check") \
+            + _("whether someone called targetcli manually")
+            Yast::Popup.Error(err_msg)
+            return false
+          end
+        end
+        begin
+          Cheetah.run(cmd, p2)
+        rescue Cheetah::ExecutionFailed => e
+          if e.stderr != nil
+            err_msg = _("Failed to create Target Portal Group ") + target_tpg \
+            + _("The target is create, in the meanwhile, please delete it if needed.") \
+            + _("Or a defalut target portal group 1 will be added to the target when you edit it.")
+            Yast::Popup.Error(err_msg)
+            return false
+          end
+        end
+      end
+      @lun_table_widget.set_target_info(@target_name, target_tpg)
       return true
     end
   end
@@ -808,12 +835,15 @@ class LUNTable < CWM::Table
     @luns_added = Array.new
     @luns = generate_items()
     @target_name = nil
+    @target_tpg = nil
   end
 
-  def set_target_name(name)
+  def set_target_info(name, tpg)
     @target_name = name
+    @target_tpg = tpg
     puts "in set_target_name"
     p @target_name
+    p @target_tpg
   end
 
   def generate_items
@@ -1200,8 +1230,8 @@ class LUNsTableWidget < CWM::CustomWidget
   end
 
   #This function pass target name from AddTargetWidget to lun table
-  def set_target_name(name)
-    @lun_table.set_target_name(name)
+  def set_target_info(name, tpg)
+    @lun_table.set_target_info(name, tpg)
   end
 
   #This function will return new luns, aka the newly added luns which needed to be created in tpg#N/luns
