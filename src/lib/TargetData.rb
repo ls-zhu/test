@@ -198,11 +198,16 @@ class Target
   #For now, Yast only support the case that only has one TPG, this function will return the only TPG,
   # if there are more than one TPG in the target, it will return the first one.
   def get_default_tpg()
-    @tpg_hash_list.each do |key,value|
-      return value
+    if @tpg_hash_list.empty? == true
+      return nil
+    else
+      @tpg_hash_list.each do |key,value|
+        return value
+      end
     end
 
   end
+
   def fetch_target_name()
     @target_name
   end

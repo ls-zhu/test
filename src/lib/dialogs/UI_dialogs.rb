@@ -562,7 +562,35 @@ class AddTargetWidget < CWM::CustomWidget
       target_list = $target_data.get_target_list
       target = target_list.fetch_target(target_name)
       #tpg = target.fetch_tpg()
-      tpg_num = target.get_default_tpg().fetch_tpg_number()
+      tpg = target.get_default_tpg()
+      puts "tpg is:"
+      p tpg
+      #we add a default target portal group = 1 if no tpgs exist.
+      if tpg == nil
+        puts "in if, tpg is"
+        p tpg
+        tpg_num = rand(10)
+        puts tpg_num
+        cmd = "targetcli"
+        p1 = "iscsi/" + target_name + "/ create tag=" + tpg_num.to_s
+        begin
+          Cheetah.run(cmd, p1)
+        rescue Cheetah::ExecutionFailed => e
+          if e.stderr != nil
+            Yast::Popup.Error(e.stderr)
+          end
+        end
+        $target_data.analyze()
+        target = target_list.fetch_target(target_name)
+      end
+
+      if tpg !=nil
+        puts "in else,tpg is:"
+        p tpg
+        target = target_list.fetch_target(target_name)
+        tpg_num = target.get_default_tpg().fetch_tpg_number()
+      end
+
       printf("tpg_num is %d.\n",tpg_num)
       luns = target.get_default_tpg.get_luns_array()
      # p luns
@@ -603,8 +631,6 @@ class AddTargetWidget < CWM::CustomWidget
     if @mode == "new"
       cmd = "targetcli"
       p1 = "iscsi/ create"
-      #puts @target_name_input_field.get_value
-      #puts @target_identifier_input_field.get_value
       if @target_name_input_field.get_value.bytesize > @iscsi_name_length_max
         @target_name = @target_name_input_field.get_value
       else
@@ -622,6 +648,8 @@ class AddTargetWidget < CWM::CustomWidget
         end
       end
       target_tpg = @target_portal_group_field.value.to_s
+      #Yast only support one TPG, targetcli will create a default tpg =1, if users provided another tpg number,
+      #we need to delete tpg=1, then create another tpg based on the user provided number
       if target_tpg != "1"
         p1 = "iscsi/" + @target_name + "/ delete tag=1"
         p2 = "iscsi/" + @target_name + "/ create tag=" + target_tpg
@@ -653,10 +681,9 @@ class AddTargetWidget < CWM::CustomWidget
     end
 
     if @mode == "edit"
-      #TODO: if there is no TPG for a target, we should add a default tpg=1 to the target. For example,
-      #TODO: (in above "new" mode), if users provided a tpg=2, we deleted the default tpg=1, but failed to
-      #TODO: create the new tpg=2, there whould be no TPGs there.
+
     end
+    return true
   end
 
 
@@ -702,16 +729,27 @@ end
 
 class TargetTable < CWM::Table
   def initialize()
+    puts "initialize() is called."
+    #functions like initialize and items would be called multiple times by its
+    #container(and its container) working not properly
+    #That's the reason why we need @items_need_refresh to control that. We should remove @items_need_refresh
+    #when CWM work well. We don't need locks to protect it.
+    #@items_need_refresh = false
     @targets = Array.new
     @targets_names = $target_data.get_target_names_array
+    @targets = generate_items()
   end
 
-
+  def init
+    puts "init() is called."
+  end
   def generate_items
+    puts "generate_items() is called"
     items_array = Array.new
     @targets_names.each do |elem|
       items_array.push([rand(9999), elem, 1 , "Enabled"])
     end
+    p items_array
     return items_array
   end
 
@@ -720,17 +758,20 @@ class TargetTable < CWM::Table
   end
 
   def items
-    @targets = generate_items()
-    #puts "in items"
-    #p @targets_names
-    return @targets
+    puts "items() is called."
+    #if @items_need_refresh = true
+     # return generate_items()
+    #else
+     # return @targets
+    #end
+    @targets
   end
 
   def get_selected
-    #p @targets
-    #p self.value
+    p @targets
+    p self.value
     @targets.each do |target|
-      #p target
+      p target
       if target[0] == self.value
         return target
       end
@@ -754,6 +795,7 @@ class TargetTable < CWM::Table
   end
 
   def update_table()
+    puts "update_table() is called."
     $target_data.analyze()
     @targets_names = $target_data.get_target_names_array
     self.change_items(generate_items())
@@ -798,6 +840,8 @@ class TargetsTableWidget < CWM::CustomWidget
 
   def handle(event)
     #puts event
+    # we put @target_table.update_table() in every case than outside the "case event", because handle would be called
+    #in it's container, that will cause an unexpected update table.
     case event["ID"]
       when :add
         @add_target_page = AddTargetWidget.new(nil)
@@ -805,9 +849,11 @@ class TargetsTableWidget < CWM::CustomWidget
         Yast::Wizard.CreateDialog
         CWM.show(contents, caption: _("Add iSCSI Target"))
         Yast::Wizard.CloseDialog
+        @target_table.update_table()
       when :edit
-        #puts "Clicked Edit button!"
+        puts "Clicked Edit button!"
         target = @target_table.get_selected()
+        p target
         if target != nil
           #p target
           @edit_target_page = AddTargetWidget.new(target[1])
@@ -816,13 +862,14 @@ class TargetsTableWidget < CWM::CustomWidget
           CWM.show(contents, caption: _("Edit iSCSI Target"))
           Yast::Wizard.CloseDialog
         end
+        @target_table.update_table()
       when :delete
         id = @target_table.get_selected()
         #puts "Clicked Delete button"
         printf("The selected value is %s.\n", id)
        # @target_table.remove_target_item(id)
+        @target_table.update_table()
     end
-    @target_table.update_table()
     nil
   end
 
