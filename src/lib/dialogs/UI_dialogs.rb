@@ -937,40 +937,71 @@ class LUNTable < CWM::Table
 
   def validate
     puts 'validate() in LUN_table is called.'
+    failed_storage = String.new
     p @luns_added
+    #TODO: should check lun_name(if exist, we should create the backstore here first), check lun_num(should use if exist)
     @luns_added.each do |lun|
       cmd = 'targetcli'
-      p1 = 'iscsi/' + @target_name + '/tpg' + @target_tpg.to_s + '/luns create storage_object=' + lun[3]
+      if lun[2].empty? == false
+        case lun[4]
+          when "file"
+            p1 = 'backstores/fileio create name=' + lun[2] + ' file_or_dev=' + lun[3]
+            p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create" + \
+                 'storage_object=/backstores/block/' + lun[2]
+          when "blockSpecial"
+            p1 = 'backstores/blockSpecial create name=' + lun[2] + 'dev=' + lun[3]
+            p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create" + \
+                 'storage_object=/backstores/fileio/' + lun[2]
+        end
+        if lun[3] != "-1"
+          p2 += ('lun=' + lun[3])
+        end
+      end
+      #create a backstorage first
       begin
         Cheetah.run(cmd, p1)
       rescue Cheetah::ExecutionFailed => e
-        Yast::Popup.Error(_("Target created, but failed to create LUNs with following errors:\n") + \
-                          e.stderr + _('You can try to edit or delete the target.'))
+        if e.stderr != nil
+          failed_storage += (lun[3] + "\n")
+          next
+        end
+      end
+      #create lun using the backstore above
+      begin
+        Cheetah.run(cmd, p2)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          failed_storage += (lun[3] + "\n")
+          #Need to delete the backstore if failed to create the lun even very unlikely to happen.
+          case lun[4]
+            when "file"
+              p1 = 'backstores/fileio delete' + lun[2]
+            when "blockSpecial"
+              p1 = 'backstores/blockSpecial delete' + lun[2]
+          end
+          #we don't care whether it would fail, no damages.
+          Cheetah.run(cmd, p1)
+          next
+        end
+      end
+##################################################################################################
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          failed_storage += (lun[3] + "\n")
+        end
+      end
+      if failed_storage.empty? == false
+        err_msg = _("Failed to create LUNs with such backstores:\n") + failed_storage + \
+                  _("Please check whether the backstore or LUN number is in use, name is valid.\n") + \
+                  _("You can try to edit the target to add the LUNs again.")
+        Yast::Popup.Error(err_msg)
       end
     end
     true
   end
 
-  def do_create_luns_backstore(lun)
-    cmd = 'targetcli'
-    if lun[4] == 'file'
-      p1 = 'backstores/fileio create name=' + lun[3] + ' file_or_dev=' + lun[2]
-    end
-    if lun[4] == 'blockSpecial'
-      p1 = 'backstores/block create name=' + lun[3] + ' dev=' + lun[2]
-    end
-    ret = Yast::Execute.locally(cmd, p1, stdout: :capture)
-  end
-
-  def create_luns_backstore
-    puts 'create_luns_backstore() in LUNTable is called.'
-    # Here we will create new luns in backstore/fileio or block
-    @luns_added.each do |lun|
-      printf('It will adda lun with path %s, with lun type %s', lun[2], lun[4])
-      do_create_luns_backstore(lun)
-    end
-    $back_stores.analyze
-  end
 
   def update_table(luns)
     change_items(luns)
@@ -1074,7 +1105,7 @@ class LUNPathEdit < CWM::CustomWidget
   def initialize
     self.handle_all_events = true
     @path = nil
-    @lun_path_input = LUNPathInput.new('test')
+    @lun_path_input = LUNPathInput.new("")
   end
 
   def contents
