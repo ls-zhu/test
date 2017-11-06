@@ -939,65 +939,58 @@ class LUNTable < CWM::Table
     puts 'validate() in LUN_table is called.'
     failed_storage = String.new
     p @luns_added
-    #TODO: should check lun_name(if exist, we should create the backstore here first), check lun_num(should use if exist)
     @luns_added.each do |lun|
       cmd = 'targetcli'
       if lun[2].empty? == false
         case lun[4]
           when "file"
             p1 = 'backstores/fileio create name=' + lun[2] + ' file_or_dev=' + lun[3]
-            p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create" + \
-                 'storage_object=/backstores/block/' + lun[2]
-          when "blockSpecial"
-            p1 = 'backstores/blockSpecial create name=' + lun[2] + 'dev=' + lun[3]
-            p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create" + \
+            p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create " + \
                  'storage_object=/backstores/fileio/' + lun[2]
+          when "blockSpecial"
+            p1 = 'backstores/block create name=' + lun[2] + ' dev=' + lun[3]
+            p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create " + \
+                 'storage_object=/backstores/block/' + lun[2]
         end
-        if lun[3] != "-1"
-          p2 += ('lun=' + lun[3])
+        #create backstores using the backstore provided in lun[4]  if lun[2] is not empty.
+        begin
+          Cheetah.run(cmd, p1)
+        rescue Cheetah::ExecutionFailed => e
+          puts "P1:"
+          puts e.message
+          puts e.stdout
+          puts e.stderr
+          if e.stderr != nil
+            failed_storage += (lun[3] + "\n")
+            next
+          end
         end
+      else
+        #command to create the lun in target tpg, no need to craete backstores if lun[2] is empty
+        p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create " + 'storage_object=' + lun[3]
       end
-      #create a backstorage first
-      begin
-        Cheetah.run(cmd, p1)
-      rescue Cheetah::ExecutionFailed => e
-        if e.stderr != nil
-          failed_storage += (lun[3] + "\n")
-          next
-        end
+      if lun[1].to_s != "-1"
+        p2 += (' lun=' + lun[1].to_s)
       end
-      #create lun using the backstore above
       begin
         Cheetah.run(cmd, p2)
       rescue Cheetah::ExecutionFailed => e
+        puts "P2:"
+        puts e.message
+        puts e.stdout
+        puts e.stderr
         if e.stderr != nil
           failed_storage += (lun[3] + "\n")
-          #Need to delete the backstore if failed to create the lun even very unlikely to happen.
-          case lun[4]
-            when "file"
-              p1 = 'backstores/fileio delete' + lun[2]
-            when "blockSpecial"
-              p1 = 'backstores/blockSpecial delete' + lun[2]
-          end
-          #we don't care whether it would fail, no damages.
-          Cheetah.run(cmd, p1)
           next
         end
       end
-##################################################################################################
-      begin
-        Cheetah.run(cmd, p1)
-      rescue Cheetah::ExecutionFailed => e
-        if e.stderr != nil
-          failed_storage += (lun[3] + "\n")
-        end
-      end
-      if failed_storage.empty? == false
-        err_msg = _("Failed to create LUNs with such backstores:\n") + failed_storage + \
+    end
+    #Pop up messages if any failures.
+    if failed_storage.empty? == false
+      err_msg = _("Failed to create LUNs with such backstores:\n") + failed_storage + \
                   _("Please check whether the backstore or LUN number is in use, name is valid.\n") + \
                   _("You can try to edit the target to add the LUNs again.")
-        Yast::Popup.Error(err_msg)
-      end
+      Yast::Popup.Error(err_msg)
     end
     true
   end
@@ -1106,6 +1099,7 @@ class LUNPathEdit < CWM::CustomWidget
     self.handle_all_events = true
     @path = nil
     @lun_path_input = LUNPathInput.new("")
+    @valid = nil
   end
 
   def contents
@@ -1116,7 +1110,7 @@ class LUNPathEdit < CWM::CustomWidget
   end
 
   def get_value
-    @lun_path_input.value
+    return @lun_path_input.value
   end
 
   def store; end
@@ -1126,15 +1120,29 @@ class LUNPathEdit < CWM::CustomWidget
     if File.exist?(file) == false
       Yast::Popup.Error(_('The file does not exist!'))
       @lun_path_input.value = nil
+      @valid = -1
       return false
     end
     file_type = File.ftype(file)
     if (file_type != 'blockSpecial') && (file_type != 'file')
       Yast::Popup.Error(_('Please provide a normal file or a block device.'))
       @lun_path_input.value = nil
+      @valid = -1
       return false
     end
     true
+  end
+
+  def is_valid
+    file = @lun_path_input.value.to_s
+    if File.exist?(file) == false
+      return false
+    end
+    file_type = File.ftype(file)
+    if (file_type != 'blockSpecial') && (file_type != 'file')
+      return false
+    end
+    return true
   end
 
   def handle(event)
@@ -1146,9 +1154,10 @@ class LUNPathEdit < CWM::CustomWidget
         # @lun_path_input.set_value(file)
         @lun_path_input.set_value(file)
       end
-    when :ok
+    #when :ok
 
     end
+    nil
   end
 
   def help; end
@@ -1160,7 +1169,7 @@ class LUNConfig < CWM::CustomWidget
     @lun_num_input = LunNumInput.new(nil)
     @lun_path_edit = LUNPathEdit.new
     @lun_name_input = LunNameInput.new(nil)
-    @lun_info = []
+    @lun_info = nil
   end
 
   def contents
@@ -1184,9 +1193,14 @@ class LUNConfig < CWM::CustomWidget
     # printf("lun num is %d.\n", @lun_num_input.get_value)
     # printf("lun name is %s.\n", @lun_name_input.get_value)
     # printf("lun path is %s.\n", @lun_path_edit.get_value)
-    @lun_info.push(@lun_num_input.get_value)
-    @lun_info.push(@lun_name_input.get_value)
-    @lun_info.push(@lun_path_edit.get_value)
+    puts "@lun_path_edit.is_valid is :"
+    puts @lun_path_edit.is_valid
+    if @lun_path_edit.is_valid == true
+      @lun_info = Array.new
+      @lun_info.push(@lun_num_input.get_value)
+      @lun_info.push(@lun_name_input.get_value)
+      @lun_info.push(@lun_path_edit.get_value)
+    end
 
     # lun_number = rand(100)
     # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
@@ -1299,17 +1313,19 @@ class LUNsTableWidget < CWM::CustomWidget
   def handle(event)
     # puts event
     case event['ID']
-    when :edit
-      ret = @lun_details.run
-      lun_number = ret[0]
-      lun_name = ret[1]
-      file = ret[2]
-      if !file.nil? && (File.exist?(file) == true)
-        @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
-      end
-      puts 'Got the lun info:'
-      puts ret
     when :add
+      ret = @lun_details.run
+      if ret != nil
+        lun_number = ret[0]
+        lun_name = ret[1]
+        file = ret[2]
+        if !file.nil? && (File.exist?(file) == true)
+          @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
+        end
+        puts 'Got the lun info:'
+        puts ret
+      end
+    when :edit
       file = UI.AskForExistingFile('/', '', _('Select a file or device'))
       unless file.nil?
         luns = @lun_table.get_luns
