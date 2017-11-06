@@ -1011,7 +1011,7 @@ class LunNumInput < CWM::IntField
   end
 
   def init
-    self.value = @config
+    #self.value = @config
   end
 
   def store
@@ -1023,12 +1023,14 @@ class LunNumInput < CWM::IntField
   end
 
   def get_value
-    value
+    return self.value
   end
 end
 
 class LUNPathInput < CWM::InputField
   def initialize(str)
+    puts "In initialize, str is :"
+    puts str
     @config = str
   end
 
@@ -1047,7 +1049,7 @@ class LUNPathInput < CWM::InputField
   end
 
   def init
-    self.value = @config
+    #self.value = @config
   end
 
   def store
@@ -1055,7 +1057,9 @@ class LUNPathInput < CWM::InputField
   end
 
   def get_value
-    value
+    puts "In get_value(), value is :"
+    puts self.value
+    return self.value
   end
 
   def set_value(path)
@@ -1077,7 +1081,7 @@ class LunNameInput < CWM::InputField
   end
 
   def init
-    self.value = @config
+    #self.value = @config
   end
 
   def store
@@ -1099,7 +1103,6 @@ class LUNPathEdit < CWM::CustomWidget
     self.handle_all_events = true
     @path = nil
     @lun_path_input = LUNPathInput.new("")
-    @valid = nil
   end
 
   def contents
@@ -1117,17 +1120,19 @@ class LUNPathEdit < CWM::CustomWidget
 
   def validate
     file = @lun_path_input.value.to_s
+    if file.empty?
+      Yast::Popup.Error(_('LUN Path can not be empty!'))
+      return false
+    end
     if File.exist?(file) == false
       Yast::Popup.Error(_('The file does not exist!'))
       @lun_path_input.value = nil
-      @valid = -1
       return false
     end
     file_type = File.ftype(file)
     if (file_type != 'blockSpecial') && (file_type != 'file')
       Yast::Popup.Error(_('Please provide a normal file or a block device.'))
       @lun_path_input.value = nil
-      @valid = -1
       return false
     end
     true
@@ -1135,6 +1140,9 @@ class LUNPathEdit < CWM::CustomWidget
 
   def is_valid
     file = @lun_path_input.value.to_s
+    if file.empty?
+      return false
+    end
     if File.exist?(file) == false
       return false
     end
@@ -1193,19 +1201,14 @@ class LUNConfig < CWM::CustomWidget
     # printf("lun num is %d.\n", @lun_num_input.get_value)
     # printf("lun name is %s.\n", @lun_name_input.get_value)
     # printf("lun path is %s.\n", @lun_path_edit.get_value)
-    puts "@lun_path_edit.is_valid is :"
-    puts @lun_path_edit.is_valid
+    #puts "@lun_path_edit.is_valid is :"
+    #puts @lun_path_edit.is_valid
     if @lun_path_edit.is_valid == true
       @lun_info = Array.new
       @lun_info.push(@lun_num_input.get_value)
       @lun_info.push(@lun_name_input.get_value)
       @lun_info.push(@lun_path_edit.get_value)
     end
-
-    # lun_number = rand(100)
-    # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
-    # lun_name = file[1,file.length].gsub(/\//,"_")
-    # @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
     true
   end
 
