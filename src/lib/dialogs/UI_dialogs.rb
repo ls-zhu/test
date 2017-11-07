@@ -535,6 +535,7 @@ class AddTargetWidget < CWM::CustomWidget
 
   # Fill nil when add a target or fill the name of the target to be edited
   def initialize(target_name)
+    puts "AddTargetWidget initialize() called."
     self.handle_all_events = true
     @iscsi_name_length_max = 223
     @back_storage = nil
@@ -547,7 +548,7 @@ class AddTargetWidget < CWM::CustomWidget
     @mode = nil
     time = Time.new
     date_str = time.strftime('%Y-%m')
-    if target_name.nil?
+    if target_name == nil
       @mode = 'new'
       @target_name_input_field = TargetNameInput.new('iqn.' + date_str + '.com.example')
       @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
@@ -565,7 +566,7 @@ class AddTargetWidget < CWM::CustomWidget
       puts 'tpg is:'
       p tpg
       # we add a default target portal group = 1 if no tpgs exist.
-      if tpg.nil?
+      if tpg == nil
         puts 'in if, tpg is'
         p tpg
         tpg_num = rand(10)
@@ -581,7 +582,7 @@ class AddTargetWidget < CWM::CustomWidget
         target = target_list.fetch_target(target_name)
       end
 
-      unless tpg.nil?
+      if tpg != nil
         puts 'in else,tpg is:'
         p tpg
         target = target_list.fetch_target(target_name)
@@ -624,7 +625,6 @@ class AddTargetWidget < CWM::CustomWidget
   end
 
   def validate
-    # puts 'validate in AddTarget Widget called.'
     if @mode == 'new'
       cmd = 'targetcli'
       p1 = 'iscsi/ create'
@@ -636,7 +636,7 @@ class AddTargetWidget < CWM::CustomWidget
       begin
         Cheetah.run(cmd, p1, @target_name)
       rescue Cheetah::ExecutionFailed => e
-        unless e.stderr.nil?
+        if e.stderr != nil
           err_msg = _('Can not create the target with target name: ') + \
                     @target_name + _(", plese check target name.\n") + \
                     _('Additional information: ') + e.stderr
@@ -678,7 +678,9 @@ class AddTargetWidget < CWM::CustomWidget
     end
 
     if @mode == 'edit'
-
+      @target_name = @target_name_input_field.get_value
+      target_tpg = @target_portal_group_field.value.to_s
+      @lun_table_widget.set_target_info(@target_name, target_tpg)
     end
     true
   end
@@ -727,7 +729,7 @@ class TargetTable < CWM::Table
     # @items_need_refresh = false
     @targets = []
     @targets_names = $target_data.get_target_names_array
-    @targets = generate_items
+    @targets = nil
   end
 
   def init
@@ -736,12 +738,20 @@ class TargetTable < CWM::Table
 
   def generate_items
     # puts "generate_items() is called"
-    items_array = []
-    @targets_names.each do |elem|
-      items_array.push([rand(9999), elem, 1, 'Enabled'])
+    item_array = nil
+    if @targets != nil
+      item_array = @targets
+    else
+      @targets = Array.new
+      @targets_names.each do |elem|
+        @targets.push([rand(9999), elem, 1, 'Enabled'])
+      end
+      p @targets
+      item_array =  @targets
     end
-    p items_array
-    items_array
+    puts "itme_array is:"
+    p item_array
+    return item_array
   end
 
   def header
@@ -755,17 +765,20 @@ class TargetTable < CWM::Table
     # else
     # return @targets
     # end
-    @targets
+    #@targets
+    generate_items()
   end
 
   def get_selected
     p @targets
-    p value
+    p self.value
     @targets.each do |target|
       p target
-      return target if target[0] == value
+      if target[0] == self.value
+        return target
+      end
     end
-    nil
+    return nil
   end
 
   # this function will remove a target from the table.
@@ -839,8 +852,9 @@ class TargetsTableWidget < CWM::CustomWidget
     when :edit
       puts 'Clicked Edit button!'
       target = @target_table.get_selected
+      puts "in :edit, target is:"
       p target
-      unless target.nil?
+      if target != nil
         # p target
         @edit_target_page = AddTargetWidget.new(target[1])
         contents = VBox(@edit_target_page, HStretch(), VStretch())
@@ -967,6 +981,10 @@ class LUNTable < CWM::Table
         end
       else
         #command to create the lun in target tpg, no need to craete backstores if lun[2] is empty
+        puts "P2 is:"
+        puts @target_name
+        puts @target_tpg
+        puts lun[3]
         p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create " + 'storage_object=' + lun[3]
       end
       if lun[1].to_s != "-1"
