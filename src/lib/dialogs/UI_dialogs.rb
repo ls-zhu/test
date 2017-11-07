@@ -992,6 +992,7 @@ class LUNTable < CWM::Table
                   _("You can try to edit the target to add the LUNs again.")
       Yast::Popup.Error(err_msg)
     end
+    $target_data.analyze()
     true
   end
 
