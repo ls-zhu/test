@@ -526,6 +526,29 @@ class IpSelectionComboBox < CWM::ComboBox
   end
 end
 
+#Class to handle initiator acls, will shown after creating or editing targets.
+class InitiatorACLs < CWM::CustomWidget
+  def initialize
+
+  end
+
+  def contents
+    VBox()
+  end
+
+  def validate
+    return true
+  end
+
+  def handle(event)
+    #case event["ID"]
+    return nil
+  end
+  def help
+    "demo help in InitaitorACLs"
+  end
+end
+
 # This class is used for both adding a target and editing a target
 class AddTargetWidget < CWM::CustomWidget
   include Yast
@@ -685,35 +708,16 @@ class AddTargetWidget < CWM::CustomWidget
     true
   end
 
-  # This function will create luns under tpg#N/luns from backstores
-  # TODO: Add error handling here, exceptions!
-  def create_luns
-    # p "create_luns called."
-    luns = @lun_table_widget.get_new_luns
-    # p luns
-    cmd = 'targetcli'
-    p1 = 'iscsi/' + @target_name + '/tpg' + @target_portal_group_field.value.to_s + '/luns/' + ' create'
-    luns.each do |lun|
-      p2 = '/backstores/block/' + lun[3] if lun[4] == 'blockSpecial'
-      p2 = '/backstores/fileio/' + lun[3] if lun[4] == 'file'
-      # TODO: Add error handling here, exceptions!
-      # TODO: Update Target table after add / remove targets
-      ret = Yast::Execute.locally(cmd, p1, p2, stdout: :capture)
-    end
-  end
-
   def handle(event)
     # puts event
     case event['ID']
-    when :next
-      # puts "In next:"
-      # puts @target_name_input_field.value
-      # puts "clicked Next."
-      # puts @target_name_input_field.value
-      # self.prepare_luns_list
-      # if @target_portal_group_field.value.to_s.empty?
-      # self.popup_warning_dialog("Error", "Portal group can not be empty")
-      # end
+      when :next
+        @initiator_acls = InitiatorACLs.new()
+        contents = VBox(@initiator_acls, HStretch(), VStretch())
+        Yast::Wizard.CreateDialog
+        #CWM.show(contents, caption: _('Edit iSCSI Target'))
+        CWM.show(contents, caption: _('Modify initiators ACLs'))
+        Yast::Wizard.CloseDialog
     end
     nil
   end
