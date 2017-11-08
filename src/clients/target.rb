@@ -43,7 +43,7 @@ module Yast
       contents = VBox(tabs,VStretch())
 
       Yast::Wizard.CreateDialog
-      CWM.show(contents, caption: _("Yast iSCSI Targets"))
+      CWM.show(contents, caption: _("Yast iSCSI Targets"),next_button: _("Finish"))
       Yast::Wizard.CloseDialog
 
      # log.info "Lucky number: #{lucky_number_tab.result}, true love: #{true_love_tab.result}"

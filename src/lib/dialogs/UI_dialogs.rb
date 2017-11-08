@@ -529,21 +529,30 @@ end
 #Class to handle initiator acls, will shown after creating or editing targets.
 class InitiatorACLs < CWM::CustomWidget
   def initialize
+    self.handle_all_events = true
+  end
 
+  def opt
+    [:notify]
   end
 
   def contents
-    VBox()
+    VBox(
+
+    )
   end
 
   def validate
+    ret = Yast::Popup.ErrorAnyQuestion(_("Warning"), _("test message"), _("Yes"), _("No"), :focus_yes)
+    if ret == true
+      return true
+    else
+      return false
+    end
     return true
   end
+  
 
-  def handle(event)
-    #case event["ID"]
-    return nil
-  end
   def help
     "demo help in InitaitorACLs"
   end
