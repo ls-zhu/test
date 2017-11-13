@@ -567,7 +567,7 @@ class AddTargetWidget < CWM::CustomWidget
 
   # Fill nil when add a target or fill the name of the target to be edited
   def initialize(target_name)
-    puts "AddTargetWidget initialize() called."
+    #puts "AddTargetWidget initialize() called."
     self.handle_all_events = true
     @iscsi_name_length_max = 223
     @back_storage = nil
@@ -721,13 +721,15 @@ class AddTargetWidget < CWM::CustomWidget
     # puts event
     case event['ID']
       when :next
-        @initiator_acls = InitiatorACLs.new()
-        contents = VBox(@initiator_acls, HStretch(), VStretch())
-        Yast::Wizard.CreateDialog
-        #CWM.show(contents, caption: _('Edit iSCSI Target'))
-        CWM.show(contents, caption: _('Modify initiators ACLs'))
-        Yast::Wizard.CloseDialog
+        puts "In next"
+#        @initiator_acls = InitiatorACLs.new()
+ #       contents = VBox(@initiator_acls, HStretch(), VStretch())
+  #      Yast::Wizard.CreateDialog
+   #     CWM.show(contents, caption: _('Modify initiators ACLs'))
+    #    Yast::Wizard.CloseDialog
+        return "test1111"
     end
+    puts "here"
     nil
   end
 end
@@ -740,9 +742,8 @@ class TargetTable < CWM::Table
     # That's the reason why we need @items_need_refresh to control that. We should remove @items_need_refresh
     # when CWM work well. We don't need locks to protect it.
     # @items_need_refresh = false
-    @targets = []
+    @targets = generate_items()
     @targets_names = $target_data.get_target_names_array
-    @targets = nil
   end
 
   def init
@@ -750,20 +751,13 @@ class TargetTable < CWM::Table
   end
 
   def generate_items
-    # puts "generate_items() is called"
+    @targets_names = $target_data.get_target_names_array
     item_array = nil
-    if @targets != nil
-      item_array = @targets
-    else
-      @targets = Array.new
-      @targets_names.each do |elem|
-        @targets.push([rand(9999), elem, 1, 'Enabled'])
-      end
-      p @targets
-      item_array =  @targets
+    @targets = Array.new
+    @targets_names.each do |elem|
+      @targets.push([rand(9999), elem, 1, 'Enabled'])
     end
-    puts "itme_array is:"
-    p item_array
+    item_array = @targets
     return item_array
   end
 
@@ -772,14 +766,8 @@ class TargetTable < CWM::Table
   end
 
   def items
-    # puts "items() is called."
-    # if @items_need_refresh = true
-    # return generate_items()
-    # else
-    # return @targets
-    # end
-    #@targets
-    generate_items()
+    #generate_items()
+    @targets
   end
 
   def get_selected
@@ -826,8 +814,6 @@ class TargetsTableWidget < CWM::CustomWidget
     # p caller
     self.handle_all_events = true
     @target_table = TargetTable.new
-    # p "@target_table is"
-    # p @target_table
     @add_target_page = nil
     @edit_target_page = nil
     # target_info will store target name, portal, etc
@@ -859,7 +845,9 @@ class TargetsTableWidget < CWM::CustomWidget
       @add_target_page = AddTargetWidget.new(nil)
       contents = VBox(@add_target_page, HStretch(), VStretch())
       Yast::Wizard.CreateDialog
-      CWM.show(contents, caption: _('Add iSCSI Target'))
+      ret = CWM.show(contents, caption: _('Add iSCSI Target'))
+      #puts "in :add, the ret is :"
+      #puts ret
       Yast::Wizard.CloseDialog
       @target_table.update_table
     when :edit
@@ -1012,6 +1000,8 @@ class LUNTable < CWM::Table
         puts e.stderr
         if e.stderr != nil
           failed_storage += (lun[3] + "\n")
+          table_remove_lun_item(lun[0])
+          update_table(@luns)
           next
         end
       end
@@ -1019,9 +1009,11 @@ class LUNTable < CWM::Table
     #Pop up messages if any failures.
     if failed_storage.empty? == false
       err_msg = _("Failed to create LUNs with such backstores:\n") + failed_storage + \
-                  _("Please check whether the backstore or LUN number is in use, name is valid.\n") + \
-                  _("You can try to edit the target to add the LUNs again.")
+                  _("Please check whether the backstore or LUN number is in use, name is valid.") + \
+                  _("Then delete the failed LUNs.\n")
       Yast::Popup.Error(err_msg)
+      return false
+      $target_data.analyze()
     end
     $target_data.analyze()
     true
@@ -1029,6 +1021,8 @@ class LUNTable < CWM::Table
 
 
   def update_table(luns)
+    puts "in update_table, luns are:"
+    puts luns
     change_items(luns)
   end
 end
