@@ -321,11 +321,8 @@ end
 
 class TargetNameInput < CWM::InputField
   def initialize(str)
-    # printf("TargetName got default value %s.\n", str)
+    printf("TargetName got default value %s.\n", str)
     @config = str.downcase
-    # This line would lead a failure in y2log:
-    # cwm/common_widgets.rb:37 UI::ChangeWidget failed: UI::ChangeWidget( `id ("TargetNameInput"), `Value, "iqn.2017-10.com.example" )
-    # self.value = str
     @iscsi_name_length_max = 233
   end
 
@@ -342,27 +339,18 @@ class TargetNameInput < CWM::InputField
       Yast::Popup.Error(_('Target name cannot be longger than 223 bytes.'))
       return false
     end
-    printf("In TargetNameInput, value is %s.\n", value)
     true
   end
 
   def init
     self.value = @config.downcase
-    # printf("TargeteName InputField init, got default value %s.\n",@config)
   end
 
   def store
-    # puts "STORE is called."
-    # printf("TargetName Inputfield will store the value %s.\n", @config)
     @config = value.downcase
-    # pinttf("Value of TargetName is %s.\n",self.value)
   end
 
   def get_value
-    # puts "get_value"
-    # puts @config
-    # puts value
-    # puts self.value
     value.downcase
   end
 end
@@ -526,10 +514,42 @@ class IpSelectionComboBox < CWM::ComboBox
   end
 end
 
+class ACLTable < CWM::Table
+  def initialize()
+  end
+
+  def generate_items
+    acls = Array.new()
+    return acls
+  end
+
+  def header
+    [_('Initiator'), _('LUN Mapping'), _('Auth')]
+  end
+
+  def items
+    generate_items()
+  end
+
+  def validate
+    true
+  end
+end
+
 #Class to handle initiator acls, will shown after creating or editing targets.
 class InitiatorACLs < CWM::CustomWidget
-  def initialize
-    self.handle_all_events = true
+  def initialize(target_name, tpg_num)
+    self.handle_all_events = false
+    @target_name = target_name
+    @target_tpg = tpg_num.to_i
+    @target_name_input = TargetNameInput.new(@target_name)
+    @target_portal_input = PortalGroupInput.new(@target_tpg)
+    @acls_table = ACLTable.new()
+  end
+
+  def init
+    @target_name_input.disable()
+    @target_portal_input.disable()
   end
 
   def opt
@@ -538,7 +558,18 @@ class InitiatorACLs < CWM::CustomWidget
 
   def contents
     VBox(
-
+        HBox(
+            @target_name_input,
+            @target_portal_input,
+        ),
+        @acls_table,
+        HBox(
+            PushButton(Id(:add), _('Add')),
+            PushButton(Id(:edit_lun), _('Edit LUN')),
+            PushButton(Id(:edit_auth), _('Edit Auth')),
+            PushButton(Id(:delete), _('Delete')),
+            PushButton(Id(:copy), _('Copy')),
+        )
     )
   end
 
@@ -853,6 +884,17 @@ class TargetsTableWidget < CWM::CustomWidget
     )
   end
 
+  def create_ACLs_dialog(info)
+    if info.empty? != true
+      @initiator_acls = InitiatorACLs.new(info[0], info[1])
+      #contents = VBox(@initiator_acls, HStretch(), VStretch())
+      contents = VBox(@initiator_acls)
+      Yast::Wizard.CreateDialog
+      CWM.show(contents, caption: _('Modify initiators ACLs'))
+      Yast::Wizard.CloseDialog
+    end
+  end
+
   def handle(event)
     # puts event
     # we put @target_table.update_table() in every case than outside the "case event", because handle would be called
@@ -868,19 +910,13 @@ class TargetsTableWidget < CWM::CustomWidget
       Yast::Wizard.CloseDialog
       @target_table.update_table
       info = @add_target_page.get_target_info()
-      puts info
-      @initiator_acls = InitiatorACLs.new()
-      contents = VBox(@initiator_acls, HStretch(), VStretch())
-      Yast::Wizard.CreateDialog
-      CWM.show(contents, caption: _('Modify initiators ACLs'))
-      Yast::Wizard.CloseDialog
+      create_ACLs_dialog(info)
     when :edit
       puts 'Clicked Edit button!'
       target = @target_table.get_selected
       puts "in :edit, target is:"
       p target
       if target != nil
-        # p target
         @edit_target_page = AddTargetWidget.new(target[1])
         contents = VBox(@edit_target_page, HStretch(), VStretch())
         Yast::Wizard.CreateDialog
@@ -888,13 +924,8 @@ class TargetsTableWidget < CWM::CustomWidget
         Yast::Wizard.CloseDialog
       end
       @target_table.update_table
-      info = @add_target_page.get_target_info()
-      puts info
-      @initiator_acls = InitiatorACLs.new()
-      contents = VBox(@initiator_acls, HStretch(), VStretch())
-      Yast::Wizard.CreateDialog
-      CWM.show(contents, caption: _('Modify initiators ACLs'))
-      Yast::Wizard.CloseDialog
+      info = @edit_target_page.get_target_info()
+      create_ACLs_dialog(info)
     when :delete
       id = @target_table.get_selected
       # puts "Clicked Delete button"
