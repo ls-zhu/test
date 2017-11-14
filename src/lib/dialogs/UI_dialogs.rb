@@ -569,11 +569,12 @@ class AddTargetWidget < CWM::CustomWidget
   def initialize(target_name)
     #puts "AddTargetWidget initialize() called."
     self.handle_all_events = true
+    #self.handle_all_events = false
     @iscsi_name_length_max = 223
     @back_storage = nil
     @target_name = nil
-    # @target_info used to return target name, portal number, etc to upper level class.
-    @target_info = []
+    # @target_info used to return target name, portal number, etc to the caller, in order to create ACLs
+    @target_info = Array.new
     # luns contains the luns would be shown in the lun table
     luns = nil
     # if mode == "new", need to create targets and luns, if mode == "edit", just change the target config
@@ -637,6 +638,10 @@ class AddTargetWidget < CWM::CustomWidget
     @lun_table_widget = LUNsTableWidget.new(luns)
   end
 
+  def opt
+    [:notify]
+  end
+
   def contents
     VBox(
       HBox(
@@ -657,6 +662,7 @@ class AddTargetWidget < CWM::CustomWidget
   end
 
   def validate
+    puts "Validate in AddTargetWidget is called."
     if @mode == 'new'
       cmd = 'targetcli'
       p1 = 'iscsi/ create'
@@ -706,6 +712,8 @@ class AddTargetWidget < CWM::CustomWidget
         end
       end
       @lun_table_widget.set_target_info(@target_name, target_tpg)
+      @target_info.push(@target_name)
+      @target_info.push(target_tpg)
       return true
     end
 
@@ -714,10 +722,19 @@ class AddTargetWidget < CWM::CustomWidget
       target_tpg = @target_portal_group_field.value.to_s
       @lun_table_widget.set_target_info(@target_name, target_tpg)
     end
+    @target_info.push(@target_name)
+    @target_info.push(target_tpg)
     true
   end
 
+  #used to return target info like target name, portal number to caller, for example, to craete ACLs
+  def get_target_info
+    info = @target_info
+    return info
+  end
+
   def handle(event)
+    puts "Handle() in AddTargetWidget is called."
     # puts event
     case event['ID']
       when :next
@@ -846,10 +863,17 @@ class TargetsTableWidget < CWM::CustomWidget
       contents = VBox(@add_target_page, HStretch(), VStretch())
       Yast::Wizard.CreateDialog
       ret = CWM.show(contents, caption: _('Add iSCSI Target'))
-      #puts "in :add, the ret is :"
-      #puts ret
+      puts "in :add, the ret is :"
+      puts ret
       Yast::Wizard.CloseDialog
       @target_table.update_table
+      info = @add_target_page.get_target_info()
+      puts info
+      @initiator_acls = InitiatorACLs.new()
+      contents = VBox(@initiator_acls, HStretch(), VStretch())
+      Yast::Wizard.CreateDialog
+      CWM.show(contents, caption: _('Modify initiators ACLs'))
+      Yast::Wizard.CloseDialog
     when :edit
       puts 'Clicked Edit button!'
       target = @target_table.get_selected
@@ -864,6 +888,13 @@ class TargetsTableWidget < CWM::CustomWidget
         Yast::Wizard.CloseDialog
       end
       @target_table.update_table
+      info = @add_target_page.get_target_info()
+      puts info
+      @initiator_acls = InitiatorACLs.new()
+      contents = VBox(@initiator_acls, HStretch(), VStretch())
+      Yast::Wizard.CreateDialog
+      CWM.show(contents, caption: _('Modify initiators ACLs'))
+      Yast::Wizard.CloseDialog
     when :delete
       id = @target_table.get_selected
       # puts "Clicked Delete button"
