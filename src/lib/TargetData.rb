@@ -212,7 +212,7 @@ class TargetList
   @target_hash_list = nil
   def print()
     @target_hash_list.each do |key, value|
-     p value
+     #p value
     end
   end
 
@@ -260,7 +260,8 @@ class TargetData
     #mapped_lun1 .......................................................................... [lun2 fileio/iscsi_file1 (rw)]
     @re_mapped_lun_line = Regexp.new(/mapped_lun\d+\s\.+\s\[lun\d+\s/)
 
-    # match the mapped lun like "mapped_lun1", we matched one more \s here to aovid bugs in configfs / targetcli mismatch, need to strip when use
+    # match the mapped lun like "mapped_lun1", we matched one more \s here to aovid bugs in configfs / targetcli
+    # mismatch, need to strip when use
     @re_mapping_lun = Regexp.new(/mapped_lun\d+\s/)
 
     #match the mapped lun, like "[lun2" in "[lun2 fileio/iscsi_file1 (rw)]", we matched one more \s to avoid bugs.
@@ -440,7 +441,7 @@ class TargetData
 
       # handle luns here
       if @re_lun.match(line)
-        p line
+        #p line
         # lun_num is a string like lun0, lun1,lun2....
         lun_num_tmp = @re_lun_num.match(line).to_s
         lun_num = lun_num_tmp[2,lun_num_tmp.length]

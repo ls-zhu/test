@@ -518,9 +518,25 @@ class ACLTable < CWM::Table
   def initialize()
   end
 
+  def init
+  end
+
   def generate_items
-    acls = Array.new()
-    return acls
+    @acls = Array.new()
+    return @acls
+  end
+
+  def add_item(item)
+    @acls.push(item)
+    self.change_items(@acls)
+  end
+
+  def modify_item
+
+  end
+
+  def remove_item
+
   end
 
   def header
@@ -528,11 +544,129 @@ class ACLTable < CWM::Table
   end
 
   def items
-    generate_items()
+    return generate_items()
   end
 
   def validate
     true
+  end
+end
+
+class InitiatorNameInput < CWM::InputField
+  def initialize(str)
+    @config = str
+  end
+
+  def label
+    _('Initiator Name:')
+  end
+
+  def init
+    self.value = @config
+  end
+  def validate
+    iscsi_name_max_length = 233
+    if value.empty? == true
+      err_msg = _("Initiator name can not be empty!")
+      Yast::Popup.Error(err_msg)
+      return false
+    end
+
+    if value.bytesize > iscsi_name_max_length
+      err_msg = _("Initiator name can not be longger than 233 bytes!")
+      Yast::Popup.Error(err_msg)
+      return false
+    end
+    return true
+  end
+
+  def store
+    @config = value
+  end
+
+  def get_value
+    return @config
+  end
+end
+
+class ImportLUNsCheckbox < ::CWM::CheckBox
+  def initialize
+    textdomain 'example'
+  end
+
+  def label
+    _('Import LUNs from TPG')
+  end
+
+  # auto called from Yast
+  def init
+    self.value = true # TODO: read config
+  end
+
+  def store
+    puts "IT IS #{value}!!!"
+  end
+
+  def handle
+    puts 'Changed!'
+  end
+
+  def opt
+    [:notify]
+  end
+end
+
+class AddAclDialog < CWM::Dialog
+  def initialize
+    @initiator_name_input = InitiatorNameInput.new("")
+    @import_luns = ImportLUNsCheckbox.new()
+  end
+
+  def init
+
+  end
+
+  def wizard_create_dialog
+    Yast::UI.OpenDialog(layout)
+    yield
+  ensure
+    Yast::UI.CloseDialog()
+  end
+
+  def title
+    'Add an initiator'
+  end
+
+  def contents
+    VBox(
+        @initiator_name_input,
+        @import_luns,
+        HBox(
+            PushButton(Id(:cancel), _('Cancel')),
+            PushButton(Id(:ok), _('OK')),
+        ),
+    )
+  end
+
+  def should_open_dialog?
+    true
+  end
+
+  def layout
+    VBox(
+        #HSpacing(20),
+        Left(Heading(Id(:title), title)),
+        #VStretch(),
+        #VSpacing(),
+        MinSize(70, 10, ReplacePoint(Id(:contents), Empty())),
+        #VSpacing(),
+        #VStretch()
+    )
+  end
+
+  def run
+    super
+    return @initiator_name_input.get_value()
   end
 end
 
@@ -545,11 +679,18 @@ class InitiatorACLs < CWM::CustomWidget
     @target_name_input = TargetNameInput.new(@target_name)
     @target_portal_input = PortalGroupInput.new(@target_tpg)
     @acls_table = ACLTable.new()
+    @add_acl_dialog = AddAclDialog.new()
   end
 
   def init
     @target_name_input.disable()
     @target_portal_input.disable()
+    target_list = $target_data.get_target_list
+    target = target_list.fetch_target(@target_name)
+    tpg = target.get_default_tpg
+    acls = tpg.fetch_acls("acls")
+    puts "in ACLs init, we got acls:"
+    #p acls
   end
 
   def opt
@@ -582,7 +723,20 @@ class InitiatorACLs < CWM::CustomWidget
     end
     return true
   end
-  
+
+  def handle(event)
+    case event["ID"]
+      when :add
+        initiator_name = @add_acl_dialog.run
+        item = Array.new()
+        item.push(rand(9999))
+        item.push(initiator_name)
+        item.push("")
+        item.push("None")
+        @acls_table.add_item(item)
+  end
+    nil
+  end
 
   def help
     "demo help in InitaitorACLs"
@@ -627,12 +781,12 @@ class AddTargetWidget < CWM::CustomWidget
       target = target_list.fetch_target(target_name)
       # tpg = target.fetch_tpg()
       tpg = target.get_default_tpg
-      puts 'tpg is:'
-      p tpg
+      #puts 'tpg is:'
+      #p tpg
       # we add a default target portal group = 1 if no tpgs exist.
       if tpg == nil
-        puts 'in if, tpg is'
-        p tpg
+        #puts 'in if, tpg is'
+        #p tpg
         tpg_num = rand(10)
         puts tpg_num
         cmd = 'targetcli'
@@ -647,8 +801,8 @@ class AddTargetWidget < CWM::CustomWidget
       end
 
       if tpg != nil
-        puts 'in else,tpg is:'
-        p tpg
+        #puts 'in else,tpg is:'
+        #p tpg
         target = target_list.fetch_target(target_name)
         tpg_num = target.get_default_tpg.fetch_tpg_number
       end
@@ -887,7 +1041,6 @@ class TargetsTableWidget < CWM::CustomWidget
   def create_ACLs_dialog(info)
     if info.empty? != true
       @initiator_acls = InitiatorACLs.new(info[0], info[1])
-      #contents = VBox(@initiator_acls, HStretch(), VStretch())
       contents = VBox(@initiator_acls)
       Yast::Wizard.CreateDialog
       CWM.show(contents, caption: _('Modify initiators ACLs'))
