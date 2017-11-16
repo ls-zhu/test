@@ -28,7 +28,7 @@ class Backstores
 
   #This function will return whether the backstore(path) already exsited
   def validate_backstore_exist(str)
-    #puts "validate_backstore_exist() is called." 
+    #puts "validate_backstore_exist() is called."
     #puts "The backstores_list is"
     #puts @backstores_list
     @backstores_list.each do |backstore|
@@ -43,18 +43,25 @@ class Backstores
     return false
   end
 end
+
 class ACL_group
   @initiator_rules_hash_list = nil
   @up_level_TPG = nil
   def initialize()
-    # puts "initialized a acls group"
     @initiator_rules_hash_list = Hash.new
   end
+
   def store_rule(name)
     @initiator_rules_hash_list.store(name, ACL_rule.new(name))
   end
-  def fetch_rule(name)	
+
+  def fetch_rule(name)
     @initiator_rules_hash_list.fetch(name)
+  end
+
+  def get_all_acls
+    all_acls = @initiator_rules_hash_list
+    return all_acls
   end
 end
 
@@ -66,40 +73,56 @@ class ACL_rule
   @mutual_userid = nil
   @multual_password = nil
   @mapped_luns_hash_list = nil
+
   def initialize(name)
     @initiator_name =name
     @mapped_luns_hash_list = Hash.new
   end
+
   def store_userid(id)
     @userid = id
   end
+
   def fetch_userid()
     @userid
   end
+
   def store_password(password)
     @password = password
   end
+
   def fetch_password()
     @password
   end
+
   def store_mutual_userid(id)
     @mutual_userid = id
   end
+
   def fetch_mutual_userid()
     @mutual_userid
   end
+
   def store_mutual_password(password)
     @mutual_password = password
   end
+
   def fetch_mutual_password()
     @mutual_password
   end
+
   def store_mapped_lun(mapping_lun_number)
     @mapped_luns_hash_list.store(mapping_lun_number, Mapped_LUN.new(mapping_lun_number))
   end
+
   def fetch_mapped_lun(mapping_lun_number)
      @mapped_luns_hash_list.fetch(mapping_lun_number)
-  end 
+  end
+
+  def get_mapped_lun()
+    mapped_luns = @mapped_luns_hash_list
+    return mapped_luns
+  end
 end
 
 class Mapped_LUN
@@ -109,7 +132,7 @@ class Mapped_LUN
   def initialize(mapping_lun_num)
     @mapping_lun_number = mapping_lun_num
   end
-  
+
   def store_mapping_lun_number(num)
     @mapping_lun_number = num
   end
@@ -146,6 +169,7 @@ class TPG
   def store_acls(acls_name)
     @acls_hash_list.store("acls", ACL_group.new())
   end
+
   def fetch_acls(acls_name)
      @acls_hash_list.fetch("acls")
   end
@@ -170,7 +194,7 @@ class TPG
     end
     return luns
   end
-  
+
 end
 
 class Target
@@ -226,7 +250,7 @@ class TargetList
     end
     return target_names_array
   end
-  
+
   def initialize()
     @target_hash_list = Hash.new
   end
@@ -255,7 +279,7 @@ class TargetData
 
     @re_acl_iqn_rule = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[[\w\-\s\,]*Mapped\sLUNs\:\s\d+\]/)
     @re_acl_eui_rule = Regexp.new(/eui\.\w+\s\.+\s\[[\w\-\s\,]*Mapped\sLUNs\:\s\d+\]/)
-  
+
     #match a line like this:
     #mapped_lun1 .......................................................................... [lun2 fileio/iscsi_file1 (rw)]
     @re_mapped_lun_line = Regexp.new(/mapped_lun\d+\s\.+\s\[lun\d+\s/)
@@ -321,7 +345,7 @@ class TargetData
       #handle iqn targets here.
       if @re_iqn_target.match(line)
          #puts line
-         if @iqn_name = @re_iqn_name.match(line) 
+         if @iqn_name = @re_iqn_name.match(line)
            #puts iqn_name
            @target_name=@iqn_name.to_s
            @targets_list.store_target(@target_name)
@@ -355,7 +379,7 @@ class TargetData
         @current_tpg.store_acls("acls")
         @current_acls_group = @current_tpg.fetch_acls("acls")
       end
-  
+
       # handle acl rules for an IQN initaitor here
       if @re_acl_iqn_rule.match(line)
         # puts line
@@ -459,7 +483,7 @@ class TargetData
         lun_path = lun_path_tmp[1,lun_path_tmp.length-2]
         @current_tpg.store_lun(lun_num,[rand(9999), lun_num_int, lun_name, lun_path, File.ftype(lun_path)])
       end
-    
+
     end # end of @target_outout.each do |line|
 
   end # end of the function

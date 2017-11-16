@@ -680,6 +680,7 @@ class InitiatorACLs < CWM::CustomWidget
     @target_portal_input = PortalGroupInput.new(@target_tpg)
     @acls_table = ACLTable.new()
     @add_acl_dialog = AddAclDialog.new()
+    @all_acls_hash = nil
   end
 
   def init
@@ -688,9 +689,16 @@ class InitiatorACLs < CWM::CustomWidget
     target_list = $target_data.get_target_list
     target = target_list.fetch_target(@target_name)
     tpg = target.get_default_tpg
-    acls = tpg.fetch_acls("acls")
+    #we only has one acl group called "acls"
+    acls_group_hash = tpg.fetch_acls("acls")
     puts "in ACLs init, we got acls:"
-    #p acls
+    #p acls_group
+    @all_acls_hash = acls_group_hash.get_all_acls()
+    #p all_acls_hash
+    @all_acls_hash.each do |key,value|
+      #p key
+      #p value
+    end
   end
 
   def opt
