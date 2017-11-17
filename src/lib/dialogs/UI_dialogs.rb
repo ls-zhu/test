@@ -515,10 +515,25 @@ class IpSelectionComboBox < CWM::ComboBox
 end
 
 class ACLTable < CWM::Table
-  def initialize()
+  def initialize(target_name,tpg)
+    @target_name = target_name
+    @tpg_num = tpg
   end
 
   def init
+    target_list = $target_data.get_target_list
+    target = target_list.fetch_target(@target_name)
+    tpg = target.get_default_tpg
+    #we only has one acl group called "acls"
+    acls_group_hash = tpg.fetch_acls("acls")
+    puts "in ACLs init, we got acls:"
+    #p acls_group
+    @all_acls_hash = acls_group_hash.get_all_acls()
+    #p all_acls_hash
+    @all_acls_hash.each do |key,value|
+      #p key
+      #p value
+    end
   end
 
   def generate_items
@@ -654,13 +669,8 @@ class AddAclDialog < CWM::Dialog
 
   def layout
     VBox(
-        #HSpacing(20),
         Left(Heading(Id(:title), title)),
-        #VStretch(),
-        #VSpacing(),
         MinSize(70, 10, ReplacePoint(Id(:contents), Empty())),
-        #VSpacing(),
-        #VStretch()
     )
   end
 
@@ -670,35 +680,110 @@ class AddAclDialog < CWM::Dialog
   end
 end
 
+
+class LUNMappingTable < CWM::Table
+  def initialize()
+
+  end
+
+  def init
+
+  end
+
+  def generate_items
+    @mapping = Array.new()
+    return @mapping
+  end
+
+  def add_item(item)
+    #@acls.push(item)
+    #self.change_items(@acls)
+  end
+
+  def modify_item
+
+  end
+
+  def remove_item
+
+  end
+
+  def header
+    [_('Initiator LUN'), _('Target LUN')]
+  end
+
+  def items
+    return generate_items()
+  end
+
+  def validate
+    true
+  end
+end
+
+class EditLUNMappingDialog < CWM::Dialog
+  def initialize
+    @lun_mapping_table = LUNMappingTable.new()
+  end
+
+  def init
+
+  end
+
+  def wizard_create_dialog
+    Yast::UI.OpenDialog(layout)
+    yield
+  ensure
+    Yast::UI.CloseDialog()
+  end
+
+  def title
+    'Edit LUN mapping'
+  end
+
+  def contents
+    VBox(
+        @lun_mapping_table,
+        HBox(
+            PushButton(Id(:cancel), _('Cancel')),
+            PushButton(Id(:ok), _('OK')),
+        ),
+    )
+  end
+
+  def should_open_dialog?
+    true
+  end
+
+  def layout
+    VBox(
+        Left(Heading(Id(:title), title)),
+        MinSize(50, 20, ReplacePoint(Id(:contents), Empty())),
+    )
+  end
+
+  def run
+    super
+    #return @initiator_name_input.get_value()
+  end
+end
+
+
 #Class to handle initiator acls, will shown after creating or editing targets.
 class InitiatorACLs < CWM::CustomWidget
   def initialize(target_name, tpg_num)
     self.handle_all_events = false
-    @target_name = target_name
-    @target_tpg = tpg_num.to_i
-    @target_name_input = TargetNameInput.new(@target_name)
+    @target_name_input = TargetNameInput.new(target_name)
     @target_portal_input = PortalGroupInput.new(@target_tpg)
-    @acls_table = ACLTable.new()
+    @acls_table = ACLTable.new(target_name,tpg_num.to_i)
     @add_acl_dialog = AddAclDialog.new()
+    @edit_lun_mapping_dialog = EditLUNMappingDialog.new()
     @all_acls_hash = nil
   end
 
   def init
     @target_name_input.disable()
     @target_portal_input.disable()
-    target_list = $target_data.get_target_list
-    target = target_list.fetch_target(@target_name)
-    tpg = target.get_default_tpg
-    #we only has one acl group called "acls"
-    acls_group_hash = tpg.fetch_acls("acls")
-    puts "in ACLs init, we got acls:"
-    #p acls_group
-    @all_acls_hash = acls_group_hash.get_all_acls()
-    #p all_acls_hash
-    @all_acls_hash.each do |key,value|
-      #p key
-      #p value
-    end
   end
 
   def opt
@@ -742,6 +827,8 @@ class InitiatorACLs < CWM::CustomWidget
         item.push("")
         item.push("None")
         @acls_table.add_item(item)
+      when :edit_lun
+        @edit_lun_mapping_dialog.run
   end
     nil
   end
