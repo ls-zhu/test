@@ -50,6 +50,7 @@ class NoDiscoveryAuth_widget < ::CWM::CheckBox
   end
 end
 
+# used to enable / disable 0.0.0.0 IP portal
 class BindAllIP < ::CWM::CheckBox
   def initialize
     textdomain 'example'
@@ -1007,7 +1008,7 @@ class AddTargetWidget < CWM::CustomWidget
     true
   end
 
-  #used to return target info like target name, portal number to caller, for example, to craete ACLs
+  # used to return target info like target name, portal number to caller, for example, to craete ACLs
   def get_target_info
     info = @target_info
     return info
@@ -1019,11 +1020,6 @@ class AddTargetWidget < CWM::CustomWidget
     case event['ID']
       when :next
         puts "In next"
-#        @initiator_acls = InitiatorACLs.new()
- #       contents = VBox(@initiator_acls, HStretch(), VStretch())
-  #      Yast::Wizard.CreateDialog
-   #     CWM.show(contents, caption: _('Modify initiators ACLs'))
-    #    Yast::Wizard.CloseDialog
         return "test1111"
     end
     puts "here"
@@ -1148,38 +1144,38 @@ class TargetsTableWidget < CWM::CustomWidget
     # we put @target_table.update_table() in every case than outside the "case event", because handle would be called
     # in it's container, that will cause an unexpected update table.
     case event['ID']
-    when :add
-      @add_target_page = AddTargetWidget.new(nil)
-      contents = VBox(@add_target_page, HStretch(), VStretch())
-      Yast::Wizard.CreateDialog
-      ret = CWM.show(contents, caption: _('Add iSCSI Target'))
-      puts "in :add, the ret is :"
-      puts ret
-      Yast::Wizard.CloseDialog
-      @target_table.update_table
-      info = @add_target_page.get_target_info()
-      create_ACLs_dialog(info)
-    when :edit
-      puts 'Clicked Edit button!'
-      target = @target_table.get_selected
-      puts "in :edit, target is:"
-      p target
-      if target != nil
-        @edit_target_page = AddTargetWidget.new(target[1])
-        contents = VBox(@edit_target_page, HStretch(), VStretch())
+      when :add
+        @add_target_page = AddTargetWidget.new(nil)
+        contents = VBox(@add_target_page, HStretch(), VStretch())
         Yast::Wizard.CreateDialog
-        CWM.show(contents, caption: _('Edit iSCSI Target'))
+        ret = CWM.show(contents, caption: _('Add iSCSI Target'))
+        puts "in :add, the ret is :"
+        puts ret
         Yast::Wizard.CloseDialog
-      end
-      @target_table.update_table
-      info = @edit_target_page.get_target_info()
-      create_ACLs_dialog(info)
-    when :delete
-      id = @target_table.get_selected
-      # puts "Clicked Delete button"
-      printf("The selected value is %s.\n", id)
-      # @target_table.remove_target_item(id)
-      @target_table.update_table
+        @target_table.update_table
+        info = @add_target_page.get_target_info()
+        create_ACLs_dialog(info)
+      when :edit
+        puts 'Clicked Edit button!'
+        target = @target_table.get_selected
+        puts "in :edit, target is:"
+        p target
+        if target != nil
+          @edit_target_page = AddTargetWidget.new(target[1])
+          contents = VBox(@edit_target_page, HStretch(), VStretch())
+          Yast::Wizard.CreateDialog
+          CWM.show(contents, caption: _('Edit iSCSI Target'))
+          Yast::Wizard.CloseDialog
+        end
+        @target_table.update_table
+        info = @edit_target_page.get_target_info()
+        create_ACLs_dialog(info)
+      when :delete
+        id = @target_table.get_selected
+        # puts "Clicked Delete button"
+        printf("The selected value is %s.\n", id)
+        # @target_table.remove_target_item(id)
+        @target_table.update_table
     end
     nil
   end
@@ -1277,25 +1273,17 @@ class LUNTable < CWM::Table
             p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create " + \
                  'storage_object=/backstores/block/' + lun[2]
         end
-        #create backstores using the backstore provided in lun[4]  if lun[2] is not empty.
+        # create backstores using the backstore provided in lun[4]  if lun[2] is not empty.
         begin
           Cheetah.run(cmd, p1)
         rescue Cheetah::ExecutionFailed => e
-          puts "P1:"
-          puts e.message
-          puts e.stdout
-          puts e.stderr
           if e.stderr != nil
             failed_storage += (lun[3] + "\n")
             next
           end
         end
       else
-        #command to create the lun in target tpg, no need to craete backstores if lun[2] is empty
-        puts "P2 is:"
-        puts @target_name
-        puts @target_tpg
-        puts lun[3]
+        # command to create the lun in target tpg, no need to craete backstores if lun[2] is empty
         p2 = 'iscsi/' + @target_name + '/tpg' + @target_tpg + "/luns/ create " + 'storage_object=' + lun[3]
       end
       if lun[1].to_s != "-1"
@@ -1304,10 +1292,6 @@ class LUNTable < CWM::Table
       begin
         Cheetah.run(cmd, p2)
       rescue Cheetah::ExecutionFailed => e
-        puts "P2:"
-        puts e.message
-        puts e.stdout
-        puts e.stderr
         if e.stderr != nil
           failed_storage += (lun[3] + "\n")
           table_remove_lun_item(lun[0])

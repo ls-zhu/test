@@ -205,10 +205,12 @@ class Target
     @target_name = name
     @tpg_hash_list = Hash.new
   end
+
   #Hash opertion to store a TPG
   def store_tpg(tpg_number)
     @tpg_hash_list.store(tpg_number, TPG.new(tpg_number))
   end
+
   #Hash operation to fetch a TPG
   def fetch_tpg(tpg_number)
      @tpg_hash_list.fetch(tpg_number)
@@ -331,15 +333,15 @@ class TargetData
     # the command need to execute  and the result
     @cmd = nil
     @cmd_out = nil
-    ##TODO: Need to add some error handling code here, like failed to start the service.
-    #@target_outout = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
+    # TODO: Need to add some error handling code here, like failed to start the service.
+    # @target_outout = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
     @targets_list = TargetList.new
     self.analyze
   end
 
 
   def analyze()
-    #TODO: Need to add some error handling code here, like failed to start the service.
+    # TODO: Need to add some error handling code here, like failed to start the service.
     @target_outout = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
     @target_outout.each do |line|
       #handle iqn targets here.
@@ -353,7 +355,7 @@ class TargetData
          end
       end
 
-      #handle eui targets here.
+      # handle eui targets here.
       if @re_eui_target.match(line)
          #puts line
          if @eui_name = @re_eui_name.match(line)
@@ -364,7 +366,7 @@ class TargetData
          end
       end
 
-      #handle TPGs here.
+      # handle TPGs here.
       if @tpg_name = @re_tpg.match(line)
          #puts tpg_name.to_s.strip
          #find the tpg number
