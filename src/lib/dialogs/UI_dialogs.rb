@@ -546,10 +546,20 @@ class ACLTable < CWM::Table
 
   end
 
+  def get_lun_mapping_str(acl_rule)
+    lun_mappig_str = String.new()
+    mapped_lun = acl_rule.get_mapped_lun()
+    mapped_lun.each do |key, value|
+      lun_mappig_str += value.fetch_mapped_lun_number  + "->" + value.fetch_mapping_lun_number + ","
+    end
+    return lun_mappig_str
+  end
+
   def generate_items
     @acls = Array.new()
     @all_acls_hash.each do |key,value|
-      @acls.push([rand(999), key, "", "None"])
+      lun_mappig_str = get_lun_mapping_str(value)
+      @acls.push([rand(999), key, lun_mappig_str[0, lun_mappig_str.length - 1], "None"])
     end
     return @acls
   end
