@@ -542,10 +542,7 @@ class ACLTable < CWM::Table
     return all_acls_hash
   end
 
-  def init
-
-  end
-
+  # This function will return lun mapping str like: 0->1, 2->3
   def get_lun_mapping_str(acl_rule)
     lun_mappig_str = String.new()
     mapped_lun = acl_rule.get_mapped_lun()
@@ -555,11 +552,36 @@ class ACLTable < CWM::Table
     return lun_mappig_str
   end
 
+  # This function will return auth str, like "authentication by targets"
+  def get_auth_str(acl_rule)
+    auth_str = ""
+    userid = acl_rule.fetch_userid
+    password = acl_rule.fetch_password
+    mutual_userid = acl_rule.fetch_mutual_userid
+    mutual_password = acl_rule.fetch_mutual_password
+    # Notice: when empty userid or password, it is " \n"(a space and \n)
+    if (userid != " \n") && (password != " \n")
+      auth_str += _("Authentication by Target,")
+    end
+    if (mutual_userid != " \n") && (mutual_password != " \n")
+      auth_str += _("Authentication by Initiator,")
+    end
+    return auth_str
+  end
+
   def generate_items
     @acls = Array.new()
+    auth_str = ""
     @all_acls_hash.each do |key,value|
+      #p value
       lun_mappig_str = get_lun_mapping_str(value)
-      @acls.push([rand(999), key, lun_mappig_str[0, lun_mappig_str.length - 1], "None"])
+      auth_str = get_auth_str(value)
+      if auth_str.empty? == true
+        # add a space following None, becasue we need to -1 below
+        auth_str = "None "
+      end
+      item = [rand(999), key, lun_mappig_str[0, lun_mappig_str.length - 1], auth_str[0, auth_str.length - 1]]
+      @acls.push(item)
     end
     return @acls
   end

@@ -68,10 +68,10 @@ end
 # class ACL_rule is the acl rule for a specific initaitor
 class ACL_rule
   @initiator_name = nil
-  @userid = nil
-  @password = nil
-  @mutual_userid = nil
-  @multual_password = nil
+  @userid = ""
+  @password = ""
+  @mutual_userid = ""
+  @multual_password = ""
   @mapped_luns_hash_list = nil
 
   def initialize(name)
