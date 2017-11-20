@@ -105,6 +105,7 @@ class UseLoginAuth < ::CWM::CheckBox
   end
 end
 
+# Class used to check whether initiator side auth is enabled
 class Auth_by_Initiators_widget < ::CWM::CheckBox
   def initialize
     textdomain 'example'
@@ -519,26 +520,37 @@ class ACLTable < CWM::Table
   def initialize(target_name,tpg)
     @target_name = target_name
     @tpg_num = tpg
+    @all_acls_hash = get_all_acls_hash()
   end
 
-  def init
+  def get_all_acls_hash
+    $target_data.analyze()
+    all_acls_hash = Hash.new()
     target_list = $target_data.get_target_list
     target = target_list.fetch_target(@target_name)
     tpg = target.get_default_tpg
     #we only has one acl group called "acls"
-    acls_group_hash = tpg.fetch_acls("acls")
-    puts "in ACLs init, we got acls:"
-    #p acls_group
-    @all_acls_hash = acls_group_hash.get_all_acls()
-    #p all_acls_hash
-    @all_acls_hash.each do |key,value|
-      #p key
-      #p value
+    if tpg != nil
+      acls_group_hash = tpg.fetch_acls("acls")
+    else
+      err_msg = _("There are no TPGs in the target!")
+      Yast::Popup.Error(err_msg)
     end
+    if acls_group_hash != nil
+      all_acls_hash = acls_group_hash.get_all_acls()
+    end
+    return all_acls_hash
+  end
+
+  def init
+
   end
 
   def generate_items
     @acls = Array.new()
+    @all_acls_hash.each do |key,value|
+      @acls.push([rand(999), key, "", "None"])
+    end
     return @acls
   end
 
