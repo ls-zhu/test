@@ -818,6 +818,7 @@ end
 class InitiatorACLs < CWM::CustomWidget
   def initialize(target_name, tpg_num)
     self.handle_all_events = false
+    @target_tpg = tpg_num
     @target_name_input = TargetNameInput.new(target_name)
     @target_portal_input = PortalGroupInput.new(@target_tpg)
     @acls_table = ACLTable.new(target_name,tpg_num.to_i)
