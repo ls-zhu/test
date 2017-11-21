@@ -520,7 +520,8 @@ class ACLTable < CWM::Table
   def initialize(target_name,tpg)
     @target_name = target_name
     @tpg_num = tpg
-    @all_acls_hash = get_all_acls_hash()
+    @acls = generate_items()
+   # @all_acls_hash = get_all_acls_hash()
   end
 
   def get_all_acls_hash
@@ -540,6 +541,24 @@ class ACLTable < CWM::Table
       all_acls_hash = acls_group_hash.get_all_acls()
     end
     return all_acls_hash
+  end
+
+  def generate_items
+    acls = Array.new()
+    auth_str = ""
+    all_acls_hash = get_all_acls_hash()
+    all_acls_hash.each do |key,value|
+      #p value
+      lun_mappig_str = get_lun_mapping_str(value)
+      auth_str = get_auth_str(value)
+      if auth_str.empty? == true
+        # add a space following None, becasue we need to -1 below
+        auth_str = "None "
+      end
+      item = [rand(999), key, lun_mappig_str[0, lun_mappig_str.length - 1], auth_str[0, auth_str.length - 1]]
+      acls.push(item)
+    end
+    return acls
   end
 
   # This function will return lun mapping str like: 0->1, 2->3
@@ -569,21 +588,17 @@ class ACLTable < CWM::Table
     return auth_str
   end
 
-  def generate_items
-    @acls = Array.new()
-    auth_str = ""
-    @all_acls_hash.each do |key,value|
-      #p value
-      lun_mappig_str = get_lun_mapping_str(value)
-      auth_str = get_auth_str(value)
-      if auth_str.empty? == true
-        # add a space following None, becasue we need to -1 below
-        auth_str = "None "
+
+  def get_selected()
+    #puts "get_selected() called."
+    #puts "@acls are:", @acls
+    #p "self.value is:", self.value
+    @acls.each do |item|
+      #p "item is:", item
+      if item[0] == self.value
+        return item
       end
-      item = [rand(999), key, lun_mappig_str[0, lun_mappig_str.length - 1], auth_str[0, auth_str.length - 1]]
-      @acls.push(item)
     end
-    return @acls
   end
 
   def add_item(item)
@@ -604,7 +619,7 @@ class ACLTable < CWM::Table
   end
 
   def items
-    return generate_items()
+    @acls
   end
 
   def validate
@@ -727,6 +742,37 @@ end
 
 
 class LUNMappingTable < CWM::Table
+
+  def get_all_acls_hash
+    $target_data.analyze()
+    all_acls_hash = Hash.new()
+    target_list = $target_data.get_target_list
+    target = target_list.fetch_target(@target_name)
+    tpg = target.get_default_tpg
+    #we only has one acl group called "acls"
+    if tpg != nil
+      acls_group_hash = tpg.fetch_acls("acls")
+    else
+      err_msg = _("There are no TPGs in the target!")
+      Yast::Popup.Error(err_msg)
+    end
+    if acls_group_hash != nil
+      all_acls_hash = acls_group_hash.get_all_acls()
+    end
+    return all_acls_hash
+  end
+
+  # This function will return lun mapping str like: 0->1, 2->3
+  def get_lun_mapping_str(acl_rule)
+    lun_mappig_str = String.new()
+    mapped_lun = acl_rule.get_mapped_lun()
+    mapped_lun.each do |key, value|
+      lun_mappig_str += value.fetch_mapped_lun_number  + "->" + value.fetch_mapping_lun_number + ","
+    end
+    return lun_mappig_str
+  end
+
+
   def initialize()
 
   end
@@ -771,9 +817,6 @@ class EditLUNMappingDialog < CWM::Dialog
     @lun_mapping_table = LUNMappingTable.new()
   end
 
-  def init
-
-  end
 
   def wizard_create_dialog
     Yast::UI.OpenDialog(layout)
@@ -790,8 +833,10 @@ class EditLUNMappingDialog < CWM::Dialog
     VBox(
         @lun_mapping_table,
         HBox(
-            PushButton(Id(:cancel), _('Cancel')),
+            PushButton(Id(:add), _('Add')),
+            PushButton(Id(:delete), _('Delete')),
             PushButton(Id(:ok), _('OK')),
+            PushButton(Id(:abort), _('Abort')),
         ),
     )
   end
@@ -874,7 +919,8 @@ class InitiatorACLs < CWM::CustomWidget
         item.push("None")
         @acls_table.add_item(item)
       when :edit_lun
-        @edit_lun_mapping_dialog.run
+        #@edit_lun_mapping_dialog.run
+        p @acls_table.get_selected()
   end
     nil
   end
