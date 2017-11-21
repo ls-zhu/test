@@ -813,7 +813,8 @@ class LUNMappingTable < CWM::Table
 end
 
 class EditLUNMappingDialog < CWM::Dialog
-  def initialize
+  def initialize(item)
+    p "In EditLUNMappingDialog, we got:", item
     @lun_mapping_table = LUNMappingTable.new()
   end
 
@@ -868,8 +869,8 @@ class InitiatorACLs < CWM::CustomWidget
     @target_portal_input = PortalGroupInput.new(@target_tpg)
     @acls_table = ACLTable.new(target_name,tpg_num.to_i)
     @add_acl_dialog = AddAclDialog.new()
-    @edit_lun_mapping_dialog = EditLUNMappingDialog.new()
-    @all_acls_hash = nil
+    #@edit_lun_mapping_dialog = EditLUNMappingDialog.new(nil)
+    #@all_acls_hash = nil
   end
 
   def init
@@ -912,15 +913,20 @@ class InitiatorACLs < CWM::CustomWidget
     case event["ID"]
       when :add
         initiator_name = @add_acl_dialog.run
-        item = Array.new()
-        item.push(rand(9999))
-        item.push(initiator_name)
-        item.push("")
-        item.push("None")
-        @acls_table.add_item(item)
+        if initiator_name.empty? != true
+          item = Array.new()
+          item.push(rand(9999))
+          item.push(initiator_name)
+          item.push("")
+          item.push("None")
+          @acls_table.add_item(item)
+        end
       when :edit_lun
         #@edit_lun_mapping_dialog.run
-        p @acls_table.get_selected()
+        item = @acls_table.get_selected()
+        p item
+        edit_lun_mapping_dialog = EditLUNMappingDialog.new(item)
+        ret = edit_lun_mapping_dialog.run
   end
     nil
   end
