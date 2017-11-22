@@ -788,10 +788,6 @@ class LUNMappingTable < CWM::Table
     #self.change_items(@acls)
   end
 
-  def modify_item
-
-  end
-
   def remove_item
 
   end
@@ -809,10 +805,58 @@ class LUNMappingTable < CWM::Table
   end
 end
 
+# This class used to edit lun mapping, contains a lun mapping table and buttons
+class EditLUNMappingWidget < CWM::CustomWidget
+  include Yast
+  include Yast::I18n
+  include Yast::UIShortcuts
+  include Yast::Logger
+  def initialize(initiator_name, target_name)
+    self.handle_all_events = true
+    @lun_mapping_table = LUNMappingTable.new(initiator_name, target_name)
+  end
+
+  def contents
+    VBox(
+        @lun_mapping_table,
+        HBox(
+            PushButton(Id(:add), _('Add')),
+            PushButton(Id(:delete), _('Delete')),
+            PushButton(Id(:ok), _('OK')),
+            PushButton(Id(:abort), _('Abort')),
+        ),
+    )
+  end
+
+  def opt
+    [:notify]
+  end
+
+  def validate
+    true
+  end
+
+  def handle(event)
+    # puts event
+    case event['ID']
+      when :add
+        puts "Clicked Add!"
+    end
+    nil
+  end
+
+  def help
+    _('demo help')
+  end
+end
+
+
+
 class EditLUNMappingDialog < CWM::Dialog
   def initialize(initiator_name, target_name)
     # p "In EditLUNMappingDialog, we got:", initiator_name, target_name
-    @lun_mapping_table = LUNMappingTable.new(initiator_name, target_name)
+    @lun_mapping_widget = EditLUNMappingWidget.new(initiator_name, target_name)
+    #@lun_mapping_table = LUNMappingTable.new(initiator_name, target_name)
   end
 
 
@@ -829,13 +873,7 @@ class EditLUNMappingDialog < CWM::Dialog
 
   def contents
     VBox(
-        @lun_mapping_table,
-        HBox(
-            PushButton(Id(:add), _('Add')),
-            PushButton(Id(:delete), _('Delete')),
-            PushButton(Id(:ok), _('OK')),
-            PushButton(Id(:abort), _('Abort')),
-        ),
+        @lun_mapping_widget,
     )
   end
 
