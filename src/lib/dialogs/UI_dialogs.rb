@@ -805,6 +805,121 @@ class LUNMappingTable < CWM::Table
   end
 end
 
+# This class used to input initiator side lun number, used in adding a lun mapping pare
+class InitiatorLUNNumInput < CWM::IntField
+  def initialize(int)
+    @config = int
+  end
+
+  def label
+    _('Initiator side LUN number:')
+  end
+
+  def init
+    self.value = @config
+  end
+
+  def minimum
+    -1
+  end
+
+  def store
+    @config = value
+  end
+
+  def get_value
+    return @config
+  end
+end
+
+# This class used to input target side lun number, used in adding a lun mapping pare
+class TargetLUNNumInput < CWM::IntField
+  def initialize(int)
+    @config = int
+  end
+
+  def label
+    _('Target side LUN number:')
+  end
+
+  def init
+    self.value = @config
+  end
+
+  def minimum
+    -1
+  end
+
+  def store
+    @config = value
+  end
+
+  def get_value
+    return @config
+  end
+end
+
+
+class AddLUNMappingDialog < CWM::Dialog
+  def initialize
+    @initiator_lun_num = InitiatorLUNNumInput.new(-1)
+    @target_lun_num = TargetLUNNumInput.new(-1)
+  end
+
+  def title
+    'Add a LUN mapping pair'
+  end
+
+  def wizard_create_dialog
+    Yast::UI.OpenDialog(layout)
+    yield
+  ensure
+    Yast::UI.CloseDialog()
+  end
+
+  def contents
+    VBox(
+        HBox(
+            @initiator_lun_num = InitiatorLUNNumInput.new(-1),
+            @target_lun_num = TargetLUNNumInput.new(-1),
+        ),
+        HBox(
+            PushButton(Id(:ok), _('OK')),
+            PushButton(Id(:abort), _('Abort')),
+        ),
+    )
+  end
+
+  def should_open_dialog?
+    true
+  end
+
+  def layout
+    VBox(
+        HSpacing(50),
+        Left(Heading(Id(:title), title)),
+        VStretch(),
+        VSpacing(1),
+        MinSize(80, 10, ReplacePoint(Id(:contents), Empty())),
+        VSpacing(1),
+        VStretch()
+    )
+  end
+
+  def get_mapping_lun_pair()
+    mapping_lun_pair = Array.new()
+    initiator_lun_num = @initiator_lun_num.get_value()
+    target_lun_num = @target_lun_num.get_value()
+    mapping_lun_pair.push(initiator_lun_num)
+    mapping_lun_pair.push(target_lun_num)
+  end
+
+  def run
+    super
+    return get_mapping_lun_pair()
+  end
+end
+
 # This class used to edit lun mapping, contains a lun mapping table and buttons
 class EditLUNMappingWidget < CWM::CustomWidget
   include Yast
@@ -814,6 +929,7 @@ class EditLUNMappingWidget < CWM::CustomWidget
   def initialize(initiator_name, target_name)
     self.handle_all_events = true
     @lun_mapping_table = LUNMappingTable.new(initiator_name, target_name)
+    @add_lun_mapping_dialog = AddLUNMappingDialog.new()
   end
 
   def contents
@@ -841,6 +957,17 @@ class EditLUNMappingWidget < CWM::CustomWidget
     case event['ID']
       when :add
         puts "Clicked Add!"
+        mapping_lun_pair = @add_lun_mapping_dialog.run()
+        #p mapping_lun_pair
+        initiator_lun_num = mapping_lun_pair[0]
+        target_lun_num = mapping_lun_pair[1]
+        if (initiator_lun_num < 0) || (target_lun_num < 0)
+          puts "<0"
+          return nil
+        else
+          puts ">0"
+          p initiator_lun_num, target_lun_num
+        end
     end
     nil
   end
