@@ -742,14 +742,26 @@ end
 
 
 class LUNMappingTable < CWM::Table
+  def initialize(initiator_name, target_name)
+    @initiator_name = initiator_name
+    @target_name = target_name
+    #p "In LUNMappingTable, we got:", @initiator_name, @target_name
+    @mapping_luns = Array.new()
+    @mapping_luns = generate_items()
+  end
 
-  def get_all_acls_hash
+  def generate_items
+    mapping = Array.new()
+    mapped_lun = nil
     $target_data.analyze()
     all_acls_hash = Hash.new()
+    #p "In generate_items, we got:", @target_name, @initiator_name
     target_list = $target_data.get_target_list
+    #p target_list
     target = target_list.fetch_target(@target_name)
-    tpg = target.get_default_tpg
-    #we only has one acl group called "acls"
+    #p target
+    tpg = target.get_default_tpg()
+    # we only has one acl group called "acls"
     if tpg != nil
       acls_group_hash = tpg.fetch_acls("acls")
     else
@@ -759,31 +771,16 @@ class LUNMappingTable < CWM::Table
     if acls_group_hash != nil
       all_acls_hash = acls_group_hash.get_all_acls()
     end
-    return all_acls_hash
-  end
-
-  # This function will return lun mapping str like: 0->1, 2->3
-  def get_lun_mapping_str(acl_rule)
-    lun_mappig_str = String.new()
-    mapped_lun = acl_rule.get_mapped_lun()
-    mapped_lun.each do |key, value|
-      lun_mappig_str += value.fetch_mapped_lun_number  + "->" + value.fetch_mapping_lun_number + ","
+    all_acls_hash.each do |key, value|
+      if @initiator_name == key
+        mapped_lun = value.get_mapped_lun()
+      end
     end
-    return lun_mappig_str
-  end
-
-
-  def initialize()
-
-  end
-
-  def init
-
-  end
-
-  def generate_items
-    @mapping = Array.new()
-    return @mapping
+    mapped_lun.each do |key, value|
+      #lun_mappig_str += value.fetch_mapped_lun_number  + "->" + value.fetch_mapping_lun_number + ","
+      mapping.push([rand(999), value.fetch_mapped_lun_number, value.fetch_mapping_lun_number])
+    end
+    return mapping
   end
 
   def add_item(item)
@@ -804,7 +801,7 @@ class LUNMappingTable < CWM::Table
   end
 
   def items
-    return generate_items()
+    @mapping_luns
   end
 
   def validate
@@ -813,9 +810,9 @@ class LUNMappingTable < CWM::Table
 end
 
 class EditLUNMappingDialog < CWM::Dialog
-  def initialize(item)
-    p "In EditLUNMappingDialog, we got:", item
-    @lun_mapping_table = LUNMappingTable.new()
+  def initialize(initiator_name, target_name)
+    # p "In EditLUNMappingDialog, we got:", initiator_name, target_name
+    @lun_mapping_table = LUNMappingTable.new(initiator_name, target_name)
   end
 
 
@@ -865,6 +862,7 @@ class InitiatorACLs < CWM::CustomWidget
   def initialize(target_name, tpg_num)
     self.handle_all_events = false
     @target_tpg = tpg_num
+    @target_name = target_name
     @target_name_input = TargetNameInput.new(target_name)
     @target_portal_input = PortalGroupInput.new(@target_tpg)
     @acls_table = ACLTable.new(target_name,tpg_num.to_i)
@@ -924,8 +922,8 @@ class InitiatorACLs < CWM::CustomWidget
       when :edit_lun
         #@edit_lun_mapping_dialog.run
         item = @acls_table.get_selected()
-        p item
-        edit_lun_mapping_dialog = EditLUNMappingDialog.new(item)
+        initiator_name = item[1]
+        edit_lun_mapping_dialog = EditLUNMappingDialog.new(initiator_name, @target_name)
         ret = edit_lun_mapping_dialog.run
   end
     nil
