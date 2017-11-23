@@ -106,7 +106,7 @@ class UseLoginAuth < ::CWM::CheckBox
 end
 
 # Class used to check whether initiator side auth is enabled
-class Auth_by_Initiators_widget < ::CWM::CheckBox
+class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
   def initialize
     textdomain 'example'
   end
@@ -133,8 +133,8 @@ class Auth_by_Initiators_widget < ::CWM::CheckBox
   end
 end
 
-class Auth_by_Targets_widget < ::CWM::CheckBox
-  def initialize
+class Auth_by_Targets_CheckBox < ::CWM::CheckBox
+  def initialize()
     textdomain 'example'
   end
 
@@ -283,12 +283,12 @@ class GlobalTab < ::CWM::Tab
       # HStretch(),
       VStretch(),
       NoDiscoveryAuth_widget.new,
-      Auth_by_Targets_widget.new,
+      Auth_by_Targets_CheckBox.new,
       HBox(
         UserName.new('test username'),
         Password.new('test password')
       ),
-      Auth_by_Initiators_widget.new,
+      Auth_by_Initiators_CheckBox.new,
       HBox(
         MutualUserName.new('test mutual username'),
         MutualPassword.new('test mutual password')
@@ -1058,6 +1058,84 @@ class EditLUNMappingDialog < CWM::Dialog
   end
 end
 
+class ACLInitiatorAuth < CWM::CustomWidget
+  include Yast
+  include Yast::I18n
+  include Yast::UIShortcuts
+  include Yast::Logger
+  def initialize(initiator_name, target_name)
+    @auth_by_target = Auth_by_Targets_CheckBox.new()
+    @user_name_input = UserName.new("")
+    @password_input = Password.new("")
+    self.handle_all_events = true
+  end
+
+  def contents
+        VBox(
+            @auth_by_target,
+            HBox(
+                @user_name_input,
+                @password_input,
+            ),
+        )
+  end
+
+  def opt
+    [:notify]
+  end
+
+  def validate
+    true
+  end
+
+  def handle(event)
+    nil
+  end
+
+  def help
+    _('demo help')
+  end
+end
+
+class ACLTargetAuth < CWM::CustomWidget
+  include Yast
+  include Yast::I18n
+  include Yast::UIShortcuts
+  include Yast::Logger
+  def initialize(initiator_name, target_name)
+    @auth_by_target = Auth_by_Initiators_CheckBox.new()
+    @mutual_user_name_input = UserName.new("")
+    @mutual_password_input = Password.new("")
+    self.handle_all_events = true
+  end
+
+  def contents
+    VBox(
+        @auth_by_target,
+        HBox(
+            @mutual_user_name_input,
+            @mutual_password_input,
+        ),
+    )
+  end
+
+  def opt
+    [:notify]
+  end
+
+  def validate
+    true
+  end
+
+  def handle(event)
+    nil
+  end
+
+  def help
+    _('demo help')
+  end
+end
+
 # This classed used in EditAuthDialog
 class EditAuthWidget < CWM::CustomWidget
   include Yast
@@ -1065,31 +1143,15 @@ class EditAuthWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(initiator_name, target_name)
-    @auth_by_target = Auth_by_Targets_widget.new()
-    @auth_by_initiator = Auth_by_Initiators_widget.new()
-    @user_name_input = UserName.new("")
-    @password_input = Password.new("")
-    @mutual_user_name_input = MutualUserName.new("")
-    @mutual_password_input = MutualPassword.new("")
+    @acl_initiator_auth = ACLInitiatorAuth.new("test", "test")
+    @acl_target_auth = ACLTargetAuth.new("test","test")
     self.handle_all_events = true
   end
 
   def contents
     VBox(
-        VBox(
-            @auth_by_target,
-            HBox(
-                @user_name_input,
-                @password_input,
-            ),
-        ),
-        VBox(
-            @auth_by_initiator,
-            HBox(
-               @mutual_user_name_input,
-                @mutual_password_input,
-            ),
-        ),
+        @acl_initiator_auth,
+        @acl_target_auth,
         HBox(
             PushButton(Id(:ok), _('OK')),
             PushButton(Id(:abort), _('Abort')),
