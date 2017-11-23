@@ -745,9 +745,11 @@ class LUNMappingTable < CWM::Table
   def initialize(initiator_name, target_name)
     @initiator_name = initiator_name
     @target_name = target_name
+    @tpg_num = nil
     #p "In LUNMappingTable, we got:", @initiator_name, @target_name
     @mapping_luns = Array.new()
     @mapping_luns = generate_items()
+    @mapping_luns_added = Array.new()
   end
 
   def generate_items
@@ -761,6 +763,7 @@ class LUNMappingTable < CWM::Table
     target = target_list.fetch_target(@target_name)
     #p target
     tpg = target.get_default_tpg()
+    @tpg_num = tpg.fetch_tpg_number()
     # we only has one acl group called "acls"
     if tpg != nil
       acls_group_hash = tpg.fetch_acls("acls")
@@ -783,9 +786,11 @@ class LUNMappingTable < CWM::Table
     return mapping
   end
 
-  def add_item(item)
-    #@acls.push(item)
-    #self.change_items(@acls)
+  def add_item(initiator_lun_num, target_lun_num)
+    item = [rand(999), initiator_lun_num, target_lun_num]
+    @mapping_luns.push(item)
+    @mapping_luns_added.push(item)
+    self.change_items(@mapping_luns)
   end
 
   def remove_item
@@ -801,6 +806,21 @@ class LUNMappingTable < CWM::Table
   end
 
   def validate
+    if @tpg_num == nil
+      err_msg = _("There are not TPGs in this target.")
+      Yast::Popup.Error(err_msg)
+      return false
+    end
+    cmd = 'targetcli'
+    @mapping_luns_added.each do |elem|
+      p1 = 'iscsi/' + @target_name + "/tpg" + @tpg_num + "/acls/" + @initiator_name + "/ create mapped_lun=" + \
+      elem[1].to_s + " tpg_lun_or_backstore=" + elem[2].to_s
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        Yast::Popup.Error(e.stderr) unless e.stderr.nil?
+      end
+    end
     true
   end
 end
@@ -956,17 +976,18 @@ class EditLUNMappingWidget < CWM::CustomWidget
     # puts event
     case event['ID']
       when :add
-        puts "Clicked Add!"
+        # puts "Clicked Add!"
         mapping_lun_pair = @add_lun_mapping_dialog.run()
         #p mapping_lun_pair
         initiator_lun_num = mapping_lun_pair[0]
         target_lun_num = mapping_lun_pair[1]
         if (initiator_lun_num < 0) || (target_lun_num < 0)
-          puts "<0"
+          # puts "<0"
           return nil
         else
-          puts ">0"
-          p initiator_lun_num, target_lun_num
+          # puts ">0"
+          #p initiator_lun_num, target_lun_num
+          @lun_mapping_table.add_item(initiator_lun_num, target_lun_num)
         end
     end
     nil
