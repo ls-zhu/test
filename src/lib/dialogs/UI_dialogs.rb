@@ -23,7 +23,7 @@ Yast.import 'CWMServiceStart'
 Yast.import 'UI'
 Yast.import 'TablePopup'
 
-class NoDiscoveryAuth_widget < ::CWM::CheckBox
+class NoDiscoveryAuth_CheckBox < ::CWM::CheckBox
   def initialize
     textdomain 'example'
   end
@@ -273,26 +273,133 @@ module Yast
     end
   end
 end
+
+class TargetAuthDiscovery < CWM::CustomWidget
+  include Yast
+  include Yast::I18n
+  include Yast::UIShortcuts
+  include Yast::Logger
+  def initialize()
+    @auth_by_target = Auth_by_Targets_CheckBox.new()
+    @user_name_input = UserName.new('test username')
+    @password_input = Password.new('test password')
+    self.handle_all_events = true
+  end
+
+  def contents
+    VBox(
+        @auth_by_target,
+        HBox(
+            @user_name_input,
+            @password_input,
+        ),
+    )
+  end
+
+  def opt
+    [:notify]
+  end
+
+  def validate
+    true
+  end
+
+  def handle(event)
+    nil
+  end
+
+  def help
+    _('demo help')
+  end
+end
+
+class InitiatorAuthDiscovery < CWM::CustomWidget
+  include Yast
+  include Yast::I18n
+  include Yast::UIShortcuts
+  include Yast::Logger
+  def initialize()
+    @auth_by_initiator = Auth_by_Initiators_CheckBox.new()
+    @mutual_user_name_input = MutualUserName.new('test mutual username')
+    @mutual_password_input = MutualPassword.new('test mutual password')
+    self.handle_all_events = true
+  end
+
+  def contents
+    VBox(
+        @auth_by_initiator,
+        HBox(
+            @mutual_user_name_input,
+            @mutual_password_input,
+        ),
+    )
+  end
+
+  def opt
+    [:notify]
+  end
+
+  def validate
+    true
+  end
+
+  def handle(event)
+    nil
+  end
+
+  def help
+    _('demo help')
+  end
+end
+
+class DiscoveryAuth < CWM::CustomWidget
+  include Yast
+  include Yast::I18n
+  include Yast::UIShortcuts
+  include Yast::Logger
+  def initialize()
+    @no_discovery_auth_checkbox = NoDiscoveryAuth_CheckBox.new()
+    @target_discovery_auth = TargetAuthDiscovery.new()
+    @initiator_discovery_auth = InitiatorAuthDiscovery.new()
+    self.handle_all_events = true
+  end
+
+  def contents
+    VBox(
+        @no_discovery_auth_checkbox,
+        @target_discovery_auth,
+        @initiator_discovery_auth,
+    )
+  end
+
+  def opt
+    [:notify]
+  end
+
+  def validate
+    true
+  end
+
+  def handle(event)
+    nil
+  end
+
+  def help
+    _('demo help')
+  end
+end
+
 class GlobalTab < ::CWM::Tab
   def initialize
+    @discovery_auth = DiscoveryAuth.new()
     self.initial = true
   end
 
   def contents
     VBox(
-      # HStretch(),
+      HStretch(),
       VStretch(),
-      NoDiscoveryAuth_widget.new,
-      Auth_by_Targets_CheckBox.new,
-      HBox(
-        UserName.new('test username'),
-        Password.new('test password')
-      ),
-      Auth_by_Initiators_CheckBox.new,
-      HBox(
-        MutualUserName.new('test mutual username'),
-        MutualPassword.new('test mutual password')
-      )
+      @discovery_auth,
     )
   end
 
@@ -1064,9 +1171,9 @@ class ACLInitiatorAuth < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(initiator_name, target_name)
-    @auth_by_target = Auth_by_Targets_CheckBox.new()
-    @user_name_input = UserName.new("")
-    @password_input = Password.new("")
+    @auth_by_initiator = Auth_by_Initiators_CheckBox.new()
+    @mutual_user_name_input = UserName.new("")
+    @mutual_password_input = Password.new("")
     self.handle_all_events = true
   end
 
@@ -1074,8 +1181,8 @@ class ACLInitiatorAuth < CWM::CustomWidget
         VBox(
             @auth_by_target,
             HBox(
-                @user_name_input,
-                @password_input,
+                @mutual_user_name_input,
+                @mutual_password_input,
             ),
         )
   end
@@ -1103,9 +1210,9 @@ class ACLTargetAuth < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(initiator_name, target_name)
-    @auth_by_target = Auth_by_Initiators_CheckBox.new()
-    @mutual_user_name_input = UserName.new("")
-    @mutual_password_input = Password.new("")
+    @auth_by_target = Auth_by_Targets_CheckBox.new()
+    @user_name_input = UserName.new("")
+    @password_input = Password.new("")
     self.handle_all_events = true
   end
 
@@ -1113,10 +1220,15 @@ class ACLTargetAuth < CWM::CustomWidget
     VBox(
         @auth_by_target,
         HBox(
-            @mutual_user_name_input,
-            @mutual_password_input,
+            @user_name_input,
+            @password_input,
         ),
     )
+  end
+
+  def set_input_flilds_disable()
+    @user_name_input.disable()
+    @user_name_input.disable()
   end
 
   def opt
