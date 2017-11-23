@@ -107,8 +107,9 @@ end
 
 # Class used to check whether initiator side auth is enabled
 class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
-  def initialize
+  def initialize(container)
     textdomain 'example'
+    @container_class = container
   end
 
   def label
@@ -125,7 +126,12 @@ class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
   end
 
   def handle
-    puts 'Changed!'
+    if self.value == false
+      @container_class.disable_input_fields()
+    else
+      @container_class.enable_input_fields()
+    end
+    nil
   end
 
   def opt
@@ -134,8 +140,9 @@ class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
 end
 
 class Auth_by_Targets_CheckBox < ::CWM::CheckBox
-  def initialize()
+  def initialize(container)
     textdomain 'example'
+    @container_class = container
   end
 
   def label
@@ -152,7 +159,12 @@ class Auth_by_Targets_CheckBox < ::CWM::CheckBox
   end
 
   def handle
-    puts 'Changed!'
+    if self.value == false
+      @container_class.disable_input_fields()
+    else
+      @container_class.enable_input_fields()
+    end
+    nil
   end
 
   def opt
@@ -280,7 +292,7 @@ class TargetAuthDiscovery < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize()
-    @auth_by_target = Auth_by_Targets_CheckBox.new()
+    @auth_by_target = Auth_by_Targets_CheckBox.new(self)
     @user_name_input = UserName.new('test username')
     @password_input = Password.new('test password')
     self.handle_all_events = true
@@ -294,6 +306,16 @@ class TargetAuthDiscovery < CWM::CustomWidget
             @password_input,
         ),
     )
+  end
+
+  def disable_input_fields()
+    @user_name_input.disable()
+    @password_input.disable()
+  end
+
+  def enable_input_fields()
+    @user_name_input.enable()
+    @password_input.enable()
   end
 
   def opt
@@ -319,7 +341,7 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize()
-    @auth_by_initiator = Auth_by_Initiators_CheckBox.new()
+    @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self)
     @mutual_user_name_input = MutualUserName.new('test mutual username')
     @mutual_password_input = MutualPassword.new('test mutual password')
     self.handle_all_events = true
@@ -333,6 +355,16 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
             @mutual_password_input,
         ),
     )
+  end
+
+  def disable_input_fields()
+    @mutual_user_name_input.disable()
+    @mutual_password_input.disable()
+  end
+
+  def enable_input_fields()
+    @mutual_user_name_input.enable()
+    @mutual_password_input.enable()
   end
 
   def opt
@@ -1171,7 +1203,7 @@ class ACLInitiatorAuth < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(initiator_name, target_name)
-    @auth_by_initiator = Auth_by_Initiators_CheckBox.new()
+    @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self)
     @mutual_user_name_input = UserName.new("")
     @mutual_password_input = Password.new("")
     self.handle_all_events = true
@@ -1197,6 +1229,10 @@ class ACLInitiatorAuth < CWM::CustomWidget
 
   def handle(event)
     nil
+  end
+
+  def set_input_fields_disable()
+    puts "set_input_fields_disable() called."
   end
 
   def help
