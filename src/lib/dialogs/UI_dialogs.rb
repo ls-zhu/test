@@ -781,7 +781,7 @@ class LUNMappingTable < CWM::Table
     end
     mapped_lun.each do |key, value|
       #lun_mappig_str += value.fetch_mapped_lun_number  + "->" + value.fetch_mapping_lun_number + ","
-      mapping.push([rand(999), value.fetch_mapped_lun_number, value.fetch_mapping_lun_number])
+      mapping.push([rand(999), value.fetch_mapping_lun_number, value.fetch_mapped_lun_number])
     end
     return mapping
   end
@@ -826,13 +826,16 @@ class LUNMappingTable < CWM::Table
     end
     if failed_mapping_luns.empty? == false
       err_msg = _("Failed to map such target side LUN number:\n")
-      failed_mapping_luns.each do |elem|
-        err_msg += elem[2].to_s
+      failed_mapping_luns.each do |item|
+        err_msg += item[2].to_s
         err_msg += ","
+        @mapping_luns.delete_if { |elem| elem[0] == item[0] }
+        @mapping_luns_added.delete_if { |elem| elem[0] == item[0] }
       end
       err_msg = err_msg[0, err_msg.length - 1]
       err_msg += _("\nPlease check whether the both LUN numbers in use and the LUNs still exists.")
       Yast::Popup.Error(err_msg)
+      self.change_items(@mapping_luns)
       return false
     end
     true
