@@ -780,7 +780,6 @@ class LUNMappingTable < CWM::Table
       end
     end
     mapped_lun.each do |key, value|
-      #lun_mappig_str += value.fetch_mapped_lun_number  + "->" + value.fetch_mapping_lun_number + ","
       mapping.push([rand(999), value.fetch_mapping_lun_number, value.fetch_mapped_lun_number])
     end
     return mapping
@@ -1059,6 +1058,105 @@ class EditLUNMappingDialog < CWM::Dialog
   end
 end
 
+# This classed used in EditAuthDialog
+class EditAuthWidget < CWM::CustomWidget
+  include Yast
+  include Yast::I18n
+  include Yast::UIShortcuts
+  include Yast::Logger
+  def initialize(initiator_name, target_name)
+    @auth_by_target = Auth_by_Targets_widget.new()
+    @auth_by_initiator = Auth_by_Initiators_widget.new()
+    @user_name_input = UserName.new("")
+    @password_input = Password.new("")
+    @mutual_user_name_input = MutualUserName.new("")
+    @mutual_password_input = MutualPassword.new("")
+    self.handle_all_events = true
+  end
+
+  def contents
+    VBox(
+        VBox(
+            @auth_by_target,
+            HBox(
+                @user_name_input,
+                @password_input,
+            ),
+        ),
+        VBox(
+            @auth_by_initiator,
+            HBox(
+               @mutual_user_name_input,
+                @mutual_password_input,
+            ),
+        ),
+        HBox(
+            PushButton(Id(:ok), _('OK')),
+            PushButton(Id(:abort), _('Abort')),
+        ),
+    )
+  end
+
+  def opt
+    [:notify]
+  end
+
+  def validate
+    true
+  end
+
+  def handle(event)
+    nil
+  end
+
+  def help
+    _('demo help')
+  end
+end
+
+# This class used to edit initiator / target auth, not global
+class EditAuthDialog < CWM::Dialog
+  def initialize
+    @edit_auth_widget = EditAuthWidget.new("test","test")
+  end
+
+  def init
+
+  end
+
+  def wizard_create_dialog
+    Yast::UI.OpenDialog(layout)
+    yield
+  ensure
+    Yast::UI.CloseDialog()
+  end
+
+  def title
+    _('Authentication')
+  end
+
+  def contents
+    VBox(
+        @edit_auth_widget,
+    )
+  end
+
+  def should_open_dialog?
+    true
+  end
+
+  def layout
+    VBox(
+        Left(Heading(Id(:title), title)),
+        MinSize(70, 15, ReplacePoint(Id(:contents), Empty())),
+    )
+  end
+
+  def run
+    super
+    #return @initiator_name_input.get_value()
+  end
+end
 
 #Class to handle initiator acls, will shown after creating or editing targets.
 class InitiatorACLs < CWM::CustomWidget
@@ -1070,6 +1168,7 @@ class InitiatorACLs < CWM::CustomWidget
     @target_portal_input = PortalGroupInput.new(@target_tpg)
     @acls_table = ACLTable.new(target_name,tpg_num.to_i)
     @add_acl_dialog = AddAclDialog.new()
+    @edit_auth_dialog = EditAuthDialog.new()
     #@edit_lun_mapping_dialog = EditLUNMappingDialog.new(nil)
     #@all_acls_hash = nil
   end
@@ -1123,11 +1222,13 @@ class InitiatorACLs < CWM::CustomWidget
           @acls_table.add_item(item)
         end
       when :edit_lun
-        #@edit_lun_mapping_dialog.run
         item = @acls_table.get_selected()
         initiator_name = item[1]
         edit_lun_mapping_dialog = EditLUNMappingDialog.new(initiator_name, @target_name)
         ret = edit_lun_mapping_dialog.run
+      when :edit_auth
+        @edit_auth_dialog.run
+
   end
     nil
   end
