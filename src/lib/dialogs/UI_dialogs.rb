@@ -811,6 +811,7 @@ class LUNMappingTable < CWM::Table
       Yast::Popup.Error(err_msg)
       return false
     end
+    failed_mapping_luns = Array.new()
     cmd = 'targetcli'
     @mapping_luns_added.each do |elem|
       p1 = 'iscsi/' + @target_name + "/tpg" + @tpg_num + "/acls/" + @initiator_name + "/ create mapped_lun=" + \
@@ -818,8 +819,21 @@ class LUNMappingTable < CWM::Table
       begin
         Cheetah.run(cmd, p1)
       rescue Cheetah::ExecutionFailed => e
-        Yast::Popup.Error(e.stderr) unless e.stderr.nil?
+        if e.stderr != nil
+          failed_mapping_luns.push(elem)
+        end
       end
+    end
+    if failed_mapping_luns.empty? == false
+      err_msg = _("Failed to map such target side LUN number:\n")
+      failed_mapping_luns.each do |elem|
+        err_msg += elem[2].to_s
+        err_msg += ","
+      end
+      err_msg = err_msg[0, err_msg.length - 1]
+      err_msg += _("\nPlease check whether the both LUN numbers in use and the LUNs still exists.")
+      Yast::Popup.Error(err_msg)
+      return false
     end
     true
   end
