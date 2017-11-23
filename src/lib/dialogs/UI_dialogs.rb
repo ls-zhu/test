@@ -24,8 +24,9 @@ Yast.import 'UI'
 Yast.import 'TablePopup'
 
 class NoDiscoveryAuth_CheckBox < ::CWM::CheckBox
-  def initialize
+  def initialize(container)
     textdomain 'example'
+    @container_class = container
   end
 
   def label
@@ -43,6 +44,12 @@ class NoDiscoveryAuth_CheckBox < ::CWM::CheckBox
 
   def handle
     puts 'Changed!'
+    if self.value == false
+      @container_class.disable_discovery_auth_widgets()
+    else
+      @container_class.enable_discovery_auth_widgets()
+    end
+    nil
   end
 
   def opt
@@ -308,6 +315,14 @@ class TargetAuthDiscovery < CWM::CustomWidget
     )
   end
 
+  def disable_checkbox()
+    @auth_by_target.disable()
+  end
+
+  def enable_checkbox()
+    @auth_by_target.enable()
+  end
+
   def disable_input_fields()
     @user_name_input.disable()
     @password_input.disable()
@@ -357,6 +372,14 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
     )
   end
 
+  def disable_checkbox()
+    @auth_by_initiator.disable()
+  end
+
+  def enable_checkbox()
+    @auth_by_initiator.enable()
+  end
+
   def disable_input_fields()
     @mutual_user_name_input.disable()
     @mutual_password_input.disable()
@@ -390,10 +413,24 @@ class DiscoveryAuth < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize()
-    @no_discovery_auth_checkbox = NoDiscoveryAuth_CheckBox.new()
+    @no_discovery_auth_checkbox = NoDiscoveryAuth_CheckBox.new(self)
     @target_discovery_auth = TargetAuthDiscovery.new()
     @initiator_discovery_auth = InitiatorAuthDiscovery.new()
     self.handle_all_events = true
+  end
+
+  def disable_discovery_auth_widgets
+    @target_discovery_auth.disable_checkbox()
+    @target_discovery_auth.disable_input_fields()
+    @initiator_discovery_auth.disable_checkbox()
+    @initiator_discovery_auth.disable_input_fields()
+  end
+
+  def enable_discovery_auth_widgets
+    @target_discovery_auth.enable_checkbox()
+    @target_discovery_auth.enable_input_fields()
+    @initiator_discovery_auth.enable_checkbox()
+    @initiator_discovery_auth.enable_input_fields()
   end
 
   def contents
@@ -1204,19 +1241,29 @@ class ACLInitiatorAuth < CWM::CustomWidget
   include Yast::Logger
   def initialize(initiator_name, target_name)
     @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self)
-    @mutual_user_name_input = UserName.new("")
-    @mutual_password_input = Password.new("")
+    @mutual_user_name_input = MutualUserName.new("")
+    @mutual_password_input = MutualPassword.new("")
     self.handle_all_events = true
   end
 
   def contents
         VBox(
-            @auth_by_target,
+            @auth_by_initiator,
             HBox(
                 @mutual_user_name_input,
                 @mutual_password_input,
             ),
         )
+  end
+
+  def disable_input_fields()
+    @mutual_user_name_input.disable()
+    @mutual_password_input.disable()
+  end
+
+  def enable_input_fields()
+    @mutual_user_name_input.enable()
+    @mutual_password_input.enable()
   end
 
   def opt
@@ -1231,10 +1278,6 @@ class ACLInitiatorAuth < CWM::CustomWidget
     nil
   end
 
-  def set_input_fields_disable()
-    puts "set_input_fields_disable() called."
-  end
-
   def help
     _('demo help')
   end
@@ -1246,7 +1289,7 @@ class ACLTargetAuth < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(initiator_name, target_name)
-    @auth_by_target = Auth_by_Targets_CheckBox.new()
+    @auth_by_target = Auth_by_Targets_CheckBox.new(self)
     @user_name_input = UserName.new("")
     @password_input = Password.new("")
     self.handle_all_events = true
@@ -1262,9 +1305,14 @@ class ACLTargetAuth < CWM::CustomWidget
     )
   end
 
-  def set_input_flilds_disable()
+  def disable_input_fields()
     @user_name_input.disable()
-    @user_name_input.disable()
+    @password_input.disable()
+  end
+
+  def enable_input_fields()
+    @user_name_input.enable()
+    @password_input.enable()
   end
 
   def opt
