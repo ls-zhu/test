@@ -407,7 +407,7 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
   end
 end
 
-class DiscoveryAuth < CWM::CustomWidget
+class DiscoveryAuthWidget < CWM::CustomWidget
   include Yast
   include Yast::I18n
   include Yast::UIShortcuts
@@ -460,7 +460,7 @@ end
 
 class GlobalTab < ::CWM::Tab
   def initialize
-    @discovery_auth = DiscoveryAuth.new()
+    @discovery_auth = DiscoveryAuthWidget.new()
     self.initial = true
   end
 

@@ -509,3 +509,77 @@ class TargetData
     return list
   end
 end
+
+class DiscoveryAuth
+  def initialize
+    @discovery_auth = Hash.new()
+  end
+
+  def store_status(status)
+    @discovery_auth.store("status", status)
+  end
+
+  def fetch_status()
+    @discovery_auth.fetch("status")
+  end
+
+  def store_userid(userid)
+    @discovery_auth.store("userid", userid)
+  end
+
+  def fetch_userid()
+    @discovery_auth.fetch("userid")
+  end
+
+  def store_password(password)
+    @discovery_auth.store("password", password)
+  end
+
+  def fetch_password()
+    @discovery_auth.fetch("password")
+  end
+
+  def store_mutual_userid(mutual_userid)
+    @discovery_auth.store("mutual_userid", mutual_userid)
+  end
+
+  def fetch_mutual_userid()
+    @discovery_auth.fetch("mutual_userid")
+  end
+
+  def store_mutual_password(mutual_password)
+    @discovery_auth.store("mutual_password", mutual_password)
+  end
+
+  def fetch_mutual_password()
+    @discovery_auth.fetch("mutual_password")
+  end
+
+  def analyze()
+    cmd = "targetcli iscsi/ get discovery_auth enable"
+    cmd_out = `#{cmd}`
+    status = cmd_out[7,cmd_out.length]
+    store_status(status)
+
+    cmd = "targetcli iscsi/ get discovery_auth userid"
+    cmd_out = `#{cmd}`
+    userid = cmd_out[7,cmd_out.length]
+    store_userid(userid)
+
+    cmd = "targetcli iscsi/ get discovery_auth password"
+    cmd_out = `#{cmd}`
+    password = cmd_out[9,cmd_out.length]
+    store_password(password)
+
+    cmd = "targetcli iscsi/ get discovery_auth mutual_userid"
+    cmd_out = `#{cmd}`
+    mutual_userid = cmd_out[14,cmd_out.length]
+    store_mutual_userid(mutual_userid)
+
+    cmd = "targetcli iscsi/ get discovery_auth mutual_password"
+    cmd_out = `#{cmd}`
+    mutual_password = cmd_out[16,cmd_out.length]
+    store_mutual_password(mutual_password)
+    #p @discovery_auth
+  end
+end

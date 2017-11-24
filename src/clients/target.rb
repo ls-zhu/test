@@ -56,3 +56,5 @@ $back_stores = Backstores.new
 #back_stores.analyze
 #$target_data.print
 Yast::ExampleDialog.new.run
+$discovery_auth = DiscoveryAuth.new()
+$discovery_auth.analyze()
