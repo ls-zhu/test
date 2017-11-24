@@ -24,8 +24,9 @@ Yast.import 'UI'
 Yast.import 'TablePopup'
 
 class NoDiscoveryAuth_CheckBox < ::CWM::CheckBox
-  def initialize(container)
+  def initialize(container,value)
     textdomain 'example'
+    @config = value
     @container_class = container
   end
 
@@ -35,7 +36,7 @@ class NoDiscoveryAuth_CheckBox < ::CWM::CheckBox
 
   # auto called from Yast
   def init
-    self.value = true # TODO: read config
+    self.value = @config # TODO: read config
   end
 
   def store
@@ -197,6 +198,10 @@ class UserName < CWM::InputField
     @config = value
     printf("Username Inputfield will store the value %s.\n", @config)
   end
+
+  def set_value(str)
+    self.value = str
+  end
 end
 
 class Password < CWM::InputField
@@ -300,9 +305,19 @@ class TargetAuthDiscovery < CWM::CustomWidget
   include Yast::Logger
   def initialize()
     @auth_by_target = Auth_by_Targets_CheckBox.new(self)
-    @user_name_input = UserName.new('test username')
-    @password_input = Password.new('test password')
+    $discovery_auth.analyze()
+    username = $discovery_auth.fetch_userid()
+    password = $discovery_auth.fetch_password()
+    @user_name_input = UserName.new(username)
+    @password_input = Password.new(password)
     self.handle_all_events = true
+  end
+
+  def init()
+    #p "In TargetAuthDiscovery, username = ", username, "password = ", password
+    #if username == " \n"
+     # puts "username is empty."
+    #end
   end
 
   def contents
@@ -413,13 +428,27 @@ class DiscoveryAuthWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize()
-    @no_discovery_auth_checkbox = NoDiscoveryAuth_CheckBox.new(self)
+    $discovery_auth.analyze()
+    @status = $discovery_auth.fetch_status()
+    if @status == "False \n"
+      value = false
+    else
+      value = true
+    end
+    @no_discovery_auth_checkbox = NoDiscoveryAuth_CheckBox.new(self, value)
     @target_discovery_auth = TargetAuthDiscovery.new()
     @initiator_discovery_auth = InitiatorAuthDiscovery.new()
     self.handle_all_events = true
   end
 
+  def init()
+    if @status == "False \n"
+      disable_discovery_auth_widgets()
+    end
+  end
+
   def disable_discovery_auth_widgets
+    puts "disable_discovery_auth_widgets() called."
     @target_discovery_auth.disable_checkbox()
     @target_discovery_auth.disable_input_fields()
     @initiator_discovery_auth.disable_checkbox()

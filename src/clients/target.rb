@@ -24,11 +24,9 @@ module Yast
     include Yast::I18n
     include Yast::UIShortcuts
     include Yast::Logger
-    #require './src/clients/TargetData.rb'
 
     def initialize
-       #TargetData.test
-       #p TargetData.GetNetConfig
+
     end
 
     def run
@@ -36,25 +34,24 @@ module Yast
 
       global_tab = GlobalTab.new
       targets_tab = TargetsTab.new
-      service_tab =ServiceTab.new
+      service_tab = ServiceTab.new
+      service_tab = ServiceTab.new
 
       tabs = ::CWM::Tabs.new(service_tab,global_tab,targets_tab)
 
       contents = VBox(tabs,VStretch())
 
       Yast::Wizard.CreateDialog
-      CWM.show(contents, caption: _("Yast iSCSI Targets"),next_button: _("Finish"))
+      ret = CWM.show(contents, caption: _("Yast iSCSI Targets"),next_button: _("Finish"))
       Yast::Wizard.CloseDialog
-
-     # log.info "Lucky number: #{lucky_number_tab.result}, true love: #{true_love_tab.result}"
+      p "in ExampleDialog, we got a return value which is ", ret
     end
   end
 end
 
 $target_data = TargetData.new
 $back_stores = Backstores.new
+$discovery_auth = DiscoveryAuth.new
 #back_stores.analyze
 #$target_data.print
 Yast::ExampleDialog.new.run
-$discovery_auth = DiscoveryAuth.new()
-$discovery_auth.analyze()
