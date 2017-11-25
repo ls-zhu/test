@@ -115,18 +115,19 @@ end
 
 # Class used to check whether initiator side auth is enabled
 class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
-  def initialize(container)
+  def initialize(container, value)
     textdomain 'example'
     @container_class = container
+    @config = value
   end
 
   def label
-    _("Authentication by initiators.\n")
+    _("Authentication by initiators\n")
   end
 
   # auto called from Yast
   def init
-    self.value = true # TODO: read config
+    self.value = @config # TODO: read config
   end
 
   def store
@@ -148,9 +149,10 @@ class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
 end
 
 class Auth_by_Targets_CheckBox < ::CWM::CheckBox
-  def initialize(container)
+  def initialize(container, value)
     textdomain 'example'
     @container_class = container
+    @config = value
   end
 
   def label
@@ -159,7 +161,8 @@ class Auth_by_Targets_CheckBox < ::CWM::CheckBox
 
   # auto called from Yast
   def init
-    self.value = true # TODO: read config
+    self.value = @config # TODO: read config
+    p "Auth_by_Targets_CheckBox got init value:", @config
   end
 
   def store
@@ -303,22 +306,16 @@ class TargetAuthDiscovery < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize()
-    @auth_by_target = Auth_by_Targets_CheckBox.new(self)
+  def initialize(value)
     $discovery_auth.analyze()
     username = $discovery_auth.fetch_userid()
     password = $discovery_auth.fetch_password()
+    @auth_by_target = Auth_by_Targets_CheckBox.new(self, value)
     @user_name_input = UserName.new(username)
     @password_input = Password.new(password)
     self.handle_all_events = true
   end
 
-  def init()
-    #p "In TargetAuthDiscovery, username = ", username, "password = ", password
-    #if username == " \n"
-     # puts "username is empty."
-    #end
-  end
 
   def contents
     VBox(
@@ -336,6 +333,7 @@ class TargetAuthDiscovery < CWM::CustomWidget
 
   def enable_checkbox()
     @auth_by_target.enable()
+    @auth_by_target.value = true
   end
 
   def disable_input_fields()
@@ -370,8 +368,8 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize()
-    @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self)
+  def initialize(value)
+    @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, value)
     $discovery_auth.analyze()
     mutual_username = $discovery_auth.fetch_mutual_userid()
     mutual_password = $discovery_auth.fetch_mutual_password()
@@ -396,6 +394,7 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
 
   def enable_checkbox()
     @auth_by_initiator.enable()
+    @auth_by_initiator.value = true
   end
 
   def disable_input_fields()
@@ -439,8 +438,8 @@ class DiscoveryAuthWidget < CWM::CustomWidget
       value = true
     end
     @no_discovery_auth_checkbox = NoDiscoveryAuth_CheckBox.new(self, value)
-    @target_discovery_auth = TargetAuthDiscovery.new()
-    @initiator_discovery_auth = InitiatorAuthDiscovery.new()
+    @target_discovery_auth = TargetAuthDiscovery.new(value)
+    @initiator_discovery_auth = InitiatorAuthDiscovery.new(value)
     self.handle_all_events = true
   end
 
@@ -1272,12 +1271,24 @@ class ACLInitiatorAuth < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(acl_hash)
-    mutual_username = acl_hash.fetch_mutual_userid()
-    mutual_password = acl_hash.fetch_mutual_password()
-    @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self)
-    @mutual_user_name_input = MutualUserName.new(mutual_username)
-    @mutual_password_input = MutualPassword.new(mutual_password)
+    @mutual_username = acl_hash.fetch_mutual_userid()
+    @mutual_password = acl_hash.fetch_mutual_password()
+    if (@mutual_password != " \n") && (@mutual_username != " \n")
+      @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, true)
+      @status = true
+    else
+      @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, false)
+      @status = false
+    end
+    @mutual_user_name_input = MutualUserName.new(@mutual_username)
+    @mutual_password_input = MutualPassword.new(@mutual_password)
     self.handle_all_events = true
+  end
+
+  def init()
+    if @status == false
+      disable_input_fields()
+    end
   end
 
   def contents
@@ -1323,12 +1334,24 @@ class ACLTargetAuth < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(acl_hash)
-    username = acl_hash.fetch_userid()
-    password = acl_hash.fetch_password()
-    @auth_by_target = Auth_by_Targets_CheckBox.new(self)
-    @user_name_input = UserName.new(username)
-    @password_input = Password.new(password)
+    @username = acl_hash.fetch_userid()
+    @password = acl_hash.fetch_password()
+    if (@password != " \n") && (@username != " \n")
+      @auth_by_target = Auth_by_Targets_CheckBox.new(self, true)
+      @status == true
+    else
+      @auth_by_target = Auth_by_Targets_CheckBox.new(self, false)
+      @status == false
+    end
+    @user_name_input = UserName.new(@username)
+    @password_input = Password.new(@password)
     self.handle_all_events = true
+  end
+
+  def init()
+    if @status == false
+      disable_input_fields()
+    end
   end
 
   def contents
