@@ -372,8 +372,11 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
   include Yast::Logger
   def initialize()
     @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self)
-    @mutual_user_name_input = MutualUserName.new('test mutual username')
-    @mutual_password_input = MutualPassword.new('test mutual password')
+    $discovery_auth.analyze()
+    mutual_username = $discovery_auth.fetch_mutual_userid()
+    mutual_password = $discovery_auth.fetch_mutual_password()
+    @mutual_user_name_input = MutualUserName.new(mutual_username)
+    @mutual_password_input = MutualPassword.new(mutual_password)
     self.handle_all_events = true
   end
 
@@ -1268,10 +1271,12 @@ class ACLInitiatorAuth < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize(initiator_name, target_name)
+  def initialize(acl_hash)
+    mutual_username = acl_hash.fetch_mutual_userid()
+    mutual_password = acl_hash.fetch_mutual_password()
     @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self)
-    @mutual_user_name_input = MutualUserName.new("")
-    @mutual_password_input = MutualPassword.new("")
+    @mutual_user_name_input = MutualUserName.new(mutual_username)
+    @mutual_password_input = MutualPassword.new(mutual_password)
     self.handle_all_events = true
   end
 
@@ -1317,10 +1322,12 @@ class ACLTargetAuth < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize(initiator_name, target_name)
+  def initialize(acl_hash)
+    username = acl_hash.fetch_userid()
+    password = acl_hash.fetch_password()
     @auth_by_target = Auth_by_Targets_CheckBox.new(self)
-    @user_name_input = UserName.new("")
-    @password_input = Password.new("")
+    @user_name_input = UserName.new(username)
+    @password_input = Password.new(password)
     self.handle_all_events = true
   end
 
@@ -1367,9 +1374,29 @@ class EditAuthWidget < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize(initiator_name, target_name)
-    @acl_initiator_auth = ACLInitiatorAuth.new("test", "test")
-    @acl_target_auth = ACLTargetAuth.new("test","test")
+  def initialize(initiator_name, target_name, tpg)
+    p "In EditAuthWidget, we got:", initiator_name, target_name, tpg
+    $target_data.analyze()
+    all_acls_hash = Hash.new()
+    target_list = $target_data.get_target_list
+    target = target_list.fetch_target(target_name)
+    tpg = target.get_default_tpg()
+    tpg_num = tpg.fetch_tpg_number()
+    if tpg != nil
+      acls_group_hash = tpg.fetch_acls("acls")
+    else
+      err_msg = _("There are no TPGs in the target!")
+      Yast::Popup.Error(err_msg)
+    end
+    if acls_group_hash != nil
+      all_acls_hash = acls_group_hash.get_all_acls()
+    end
+    all_acls_hash.each do |key, value|
+      if key == initiator_name
+        @acl_initiator_auth = ACLInitiatorAuth.new(value)
+        @acl_target_auth = ACLTargetAuth.new(value)
+      end
+    end
     self.handle_all_events = true
   end
 
@@ -1403,8 +1430,8 @@ end
 
 # This class used to edit initiator / target auth, not global
 class EditAuthDialog < CWM::Dialog
-  def initialize
-    @edit_auth_widget = EditAuthWidget.new("test","test")
+  def initialize(initiator_name, target_name, tpg)
+    @edit_auth_widget = EditAuthWidget.new(initiator_name, target_name, tpg)
   end
 
   def init
@@ -1455,7 +1482,6 @@ class InitiatorACLs < CWM::CustomWidget
     @target_portal_input = PortalGroupInput.new(@target_tpg)
     @acls_table = ACLTable.new(target_name,tpg_num.to_i)
     @add_acl_dialog = AddAclDialog.new()
-    @edit_auth_dialog = EditAuthDialog.new()
     #@edit_lun_mapping_dialog = EditLUNMappingDialog.new(nil)
     #@all_acls_hash = nil
   end
@@ -1514,6 +1540,9 @@ class InitiatorACLs < CWM::CustomWidget
         edit_lun_mapping_dialog = EditLUNMappingDialog.new(initiator_name, @target_name)
         ret = edit_lun_mapping_dialog.run
       when :edit_auth
+        item = @acls_table.get_selected()
+        initiator_name = item[1]
+        @edit_auth_dialog = EditAuthDialog.new(initiator_name, @target_name,@target_tpg)
         @edit_auth_dialog.run
 
   end
