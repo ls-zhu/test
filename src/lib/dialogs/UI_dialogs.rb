@@ -232,9 +232,19 @@ class UserName < CWM::InputField
   end
 
   def validate
+    err_msg = _("Can not use ")
+    illegal_chars = ""
     chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
     chars.each do |char|
-      p char
+      if self.value.include?(char)
+        illegal_chars += char
+        illegal_chars += ", "
+      end
+    end
+    if illegal_chars.empty? != true
+      err_msg = _("Can not use such characters: ") + illegal_chars + _("in username.")
+      Yast::Popup.Error(err_msg)
+      return false
     end
     return true
   end
@@ -266,6 +276,24 @@ class Password < CWM::InputField
   def get_value()
     return self.value
   end
+
+  def validate
+    err_msg = _("Can not use ")
+    illegal_chars = ""
+    chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
+    chars.each do |char|
+      if self.value.include?(char)
+        illegal_chars += char
+        illegal_chars += ", "
+      end
+    end
+    if illegal_chars.empty? != true
+      err_msg = _("Can not use such characters: ") + illegal_chars + _("in password.")
+      Yast::Popup.Error(err_msg)
+      return false
+    end
+    return true
+  end
 end
 
 class MutualUserName < CWM::InputField
@@ -294,6 +322,24 @@ class MutualUserName < CWM::InputField
   def get_value()
     return self.value
   end
+
+  def validate
+    err_msg = _("Can not use ")
+    illegal_chars = ""
+    chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
+    chars.each do |char|
+      if self.value.include?(char)
+        illegal_chars += char
+        illegal_chars += ", "
+      end
+    end
+    if illegal_chars.empty? != true
+      err_msg = _("Can not use such characters: ") + illegal_chars + _("in mutual_username.")
+      Yast::Popup.Error(err_msg)
+      return false
+    end
+    return true
+  end
 end
 
 class MutualPassword < CWM::InputField
@@ -321,6 +367,24 @@ class MutualPassword < CWM::InputField
 
   def get_value()
     return self.value
+  end
+
+  def validate
+    err_msg = _("Can not use ")
+    illegal_chars = ""
+    chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
+    chars.each do |char|
+      if self.value.include?(char)
+        illegal_chars += char
+        illegal_chars += ", "
+      end
+    end
+    if illegal_chars.empty? != true
+      err_msg = _("Can not use such characters: ") + illegal_chars + _("in mutual_password.")
+      Yast::Popup.Error(err_msg)
+      return false
+    end
+    return true
   end
 end
 
