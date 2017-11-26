@@ -45,13 +45,18 @@ module Yast
       ret = CWM.show(contents, caption: _("Yast iSCSI Targets"),next_button: _("Finish"))
       Yast::Wizard.CloseDialog
       p "in ExampleDialog, we got a return value which is ", ret
+
+      if ret == :next
+        p $discovery_auth.fetch_userid()
+        p $discovery_auth.fetch_password()
+      end
     end
   end
 end
 
 $target_data = TargetData.new
-$back_stores = Backstores.new
-$discovery_auth = DiscoveryAuth.new
+#$back_stores = Backstores.new
 #back_stores.analyze
+$discovery_auth = DiscoveryAuth.new
 #$target_data.print
 Yast::ExampleDialog.new.run

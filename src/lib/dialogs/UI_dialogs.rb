@@ -134,6 +134,14 @@ class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
     puts "IT IS #{value}!!!"
   end
 
+  def set_value(val)
+    self.value = val
+  end
+
+  def get_value
+    return self.value
+  end
+
   def handle
     if self.value == false
       @container_class.disable_input_fields()
@@ -169,6 +177,14 @@ class Auth_by_Targets_CheckBox < ::CWM::CheckBox
     puts "IT IS #{value}!!!"
   end
 
+  def set_value(val)
+    self.value = val
+  end
+
+  def get_value
+    return self.value
+  end
+
   def handle
     if self.value == false
       @container_class.disable_input_fields()
@@ -202,6 +218,10 @@ class UserName < CWM::InputField
     printf("Username Inputfield will store the value %s.\n", @config)
   end
 
+  def get_value()
+    return self.value
+  end
+
   def set_value(str)
     self.value = str
   end
@@ -225,6 +245,10 @@ class Password < CWM::InputField
     @config = value
     printf("Password Inputfield will store the value %s.\n", @config)
   end
+
+  def get_value()
+    return self.value
+  end
 end
 
 class MutualUserName < CWM::InputField
@@ -245,6 +269,10 @@ class MutualUserName < CWM::InputField
     @config = value
     printf("Mutual Username Inputfield will store the value %s.\n", @config)
   end
+
+  def get_value()
+    return self.value
+  end
 end
 
 class MutualPassword < CWM::InputField
@@ -264,6 +292,10 @@ class MutualPassword < CWM::InputField
   def store
     @config = value
     printf("Mutual Password Inputfield will store the value %s.\n", @config)
+  end
+
+  def get_value()
+    return self.value
   end
 end
 
@@ -307,7 +339,7 @@ class TargetAuthDiscovery < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(value)
-    $discovery_auth.analyze()
+    #$discovery_auth.analyze()
     username = $discovery_auth.fetch_userid()
     password = $discovery_auth.fetch_password()
     @auth_by_target = Auth_by_Targets_CheckBox.new(self, value)
@@ -328,6 +360,7 @@ class TargetAuthDiscovery < CWM::CustomWidget
   end
 
   def disable_checkbox()
+    @auth_by_target.set_value(false)
     @auth_by_target.disable()
   end
 
@@ -346,12 +379,31 @@ class TargetAuthDiscovery < CWM::CustomWidget
     @password_input.enable()
   end
 
+  def get_status
+    return @auth_by_target.value()
+  end
+
   def opt
     [:notify]
   end
 
   def validate
+    status = @auth_by_target.get_value
+    #p "In TargetAuthDiscovery Validate(),", status
+    #puts @user_name_input.get_value, @password_input.get_value
+    if status == true
+      if (@user_name_input.get_value == " \n") || (@password_input.get_value == " \n")
+        err_msg = _("Please use username and password in pair.")
+        Yast::Popup.Error(err_msg)
+        return false
+      end
+    end
     true
+  end
+
+  def store()
+    $discovery_auth.store_userid(@user_name_input.get_value)
+    $discovery_auth.store_password(@password_input.get_value)
   end
 
   def handle(event)
@@ -370,7 +422,7 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
   include Yast::Logger
   def initialize(value)
     @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, value)
-    $discovery_auth.analyze()
+    #$discovery_auth.analyze()
     mutual_username = $discovery_auth.fetch_mutual_userid()
     mutual_password = $discovery_auth.fetch_mutual_password()
     @mutual_user_name_input = MutualUserName.new(mutual_username)
@@ -389,6 +441,7 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
   end
 
   def disable_checkbox()
+    @auth_by_initiator.set_value(false)
     @auth_by_initiator.disable()
   end
 
@@ -407,11 +460,25 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
     @mutual_password_input.enable()
   end
 
+  def get_status
+    return @auth_by_initiator.value
+  end
+
   def opt
     [:notify]
   end
 
   def validate
+    status = @auth_by_initiator.get_value
+    #p "In InitiatorAuthDiscovery Validate(),", status
+    #puts @mutual_user_name_input.get_value, @mutual_password_input.get_value
+    if status == true
+      if (@mutual_user_name_input.get_value == " \n") || (@mutual_password_input.get_value == " \n")
+        err_msg = _("Please use mutual_username and mutual_password in pair.")
+        Yast::Popup.Error(err_msg)
+        return false
+      end
+    end
     true
   end
 
@@ -477,10 +544,24 @@ class DiscoveryAuthWidget < CWM::CustomWidget
   end
 
   def validate
+    #puts "In DiscoveryAuthWidget validate(), we got:", @no_discovery_auth_checkbox.value, \
+     # @target_discovery_auth.get_status, @initiator_discovery_auth.get_status
+    if @no_discovery_auth_checkbox.value == true
+      if (@target_discovery_auth.get_status == false) || (@initiator_discovery_auth.get_status ==false)
+        err_msg = _("When Discovery Authentication is enabled.")
+        err_msg += _("Plese use Authentication by initiator and Authentication by targets together.")
+        Yast::Popup.Error(err_msg)
+      end
+    end
     true
   end
 
+  def store()
+    #p "In DiscoveryAuthWidget store, we got:"
+  end
+
   def handle(event)
+    #puts "DiscoveryAuthWidget store() called."
     nil
   end
 
