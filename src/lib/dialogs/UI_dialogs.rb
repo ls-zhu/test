@@ -202,7 +202,11 @@ end
 
 class UserName < CWM::InputField
   def initialize(str)
-    @config = str
+    if str == " \n"
+      @config = ""
+    else
+      @config = str
+    end
   end
 
   def label
@@ -226,11 +230,23 @@ class UserName < CWM::InputField
   def set_value(str)
     self.value = str
   end
+
+  def validate
+    chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
+    chars.each do |char|
+      p char
+    end
+    return true
+  end
 end
 
 class Password < CWM::InputField
   def initialize(str)
-    @config = str
+    if str == " \n"
+      @config = ""
+    else
+      @config = str
+    end
   end
 
   def label
@@ -254,7 +270,11 @@ end
 
 class MutualUserName < CWM::InputField
   def initialize(str)
-    @config = str
+    if str == " \n"
+      @config = ""
+    else
+      @config = str
+    end
   end
 
   def label
@@ -278,7 +298,11 @@ end
 
 class MutualPassword < CWM::InputField
   def initialize(str)
-    @config = str
+    if str == " \n"
+      @config = ""
+    else
+      @config = str
+    end
   end
 
   def label
@@ -341,8 +365,8 @@ class TargetAuthDiscovery < CWM::CustomWidget
   include Yast::Logger
   def initialize(value)
     #$discovery_auth.analyze()
-    username = $discovery_auth.fetch_userid()
-    password = $discovery_auth.fetch_password()
+    username = $discovery_auth.fetch_userid.gsub(/\s+/,'')
+    password = $discovery_auth.fetch_password.gsub(/\s+/,'')
     @auth_by_target = Auth_by_Targets_CheckBox.new(self, value)
     @user_name_input = UserName.new(username)
     @password_input = Password.new(password)
@@ -404,10 +428,8 @@ class TargetAuthDiscovery < CWM::CustomWidget
 
   def store()
     puts "TargetAuthDiscovery store is called."
-    username_tmp = @user_name_input.get_value
-    password_tmp = @password_input.get_value
-    username = username_tmp[2, username_tmp.length]
-    password = password_tmp[2, password_tmp.length]
+    username = @user_name_input.get_value.gsub(/\s+/,'')
+    password = @password_input.get_value.gsub(/\s+/,'')
     puts username, password
     $discovery_auth.store_userid(username)
     $discovery_auth.store_password(password)
@@ -430,8 +452,8 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
   def initialize(value)
     @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, value)
     #$discovery_auth.analyze()
-    mutual_username = $discovery_auth.fetch_mutual_userid()
-    mutual_password = $discovery_auth.fetch_mutual_password()
+    mutual_username = $discovery_auth.fetch_mutual_userid().gsub(/\s+/,'')
+    mutual_password = $discovery_auth.fetch_mutual_password().gsub(/\s+/,'')
     @mutual_user_name_input = MutualUserName.new(mutual_username)
     @mutual_password_input = MutualPassword.new(mutual_password)
     self.handle_all_events = true
@@ -491,10 +513,8 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
 
   def store()
     puts "InitiatorAuthDiscovery store is called."
-    mutual_username_tmp = @mutual_user_name_input.get_value
-    mutual_password_tmp = @mutual_password_input.get_value
-    mutual_username = mutual_username_tmp[2, mutual_username_tmp.length]
-    mutual_password = mutual_password_tmp[2, mutual_password_tmp.length]
+    mutual_username = @mutual_user_name_input.get_value.gsub(/\s+/,'')
+    mutual_password = @mutual_password_input.get_value.gsub(/\s+/,'')
     puts mutual_username, mutual_password
     $discovery_auth.store_mutual_userid(mutual_username)
     $discovery_auth.store_mutual_password(mutual_password)

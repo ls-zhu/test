@@ -47,11 +47,11 @@ module Yast
       p "in ExampleDialog, we got a return value which is ", ret
 
       if ret == :next
-        p $discovery_auth.fetch_status()
-        p $discovery_auth.fetch_userid()
-        p $discovery_auth.fetch_password()
-        p $discovery_auth.fetch_mutual_userid()
-        p $discovery_auth.fetch_mutual_password()
+        puts $discovery_auth.fetch_status()
+        puts $discovery_auth.fetch_userid()
+        puts $discovery_auth.fetch_password()
+        puts $discovery_auth.fetch_mutual_userid()
+        puts $discovery_auth.fetch_mutual_password()
       end
     end
   end
