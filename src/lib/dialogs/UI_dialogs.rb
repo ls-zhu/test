@@ -653,7 +653,10 @@ class DiscoveryAuthWidget < CWM::CustomWidget
         err_msg = _("When Discovery Authentication is enabled.")
         err_msg += _("Plese use Authentication by initiator and Authentication by targets together.")
         Yast::Popup.Error(err_msg)
+        return false
       end
+      #TODO: Add code to check whether users provide the same username and password for incomfing and outgoing auth,
+      #that will not work
     end
     true
   end
