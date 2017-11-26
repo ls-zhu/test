@@ -41,6 +41,7 @@ class NoDiscoveryAuth_CheckBox < ::CWM::CheckBox
 
   def store
     puts "IT IS #{value}!!!"
+    $discovery_auth.store_status(self.value)
   end
 
   def handle
