@@ -402,8 +402,14 @@ class TargetAuthDiscovery < CWM::CustomWidget
   end
 
   def store()
-    $discovery_auth.store_userid(@user_name_input.get_value)
-    $discovery_auth.store_password(@password_input.get_value)
+    puts "TargetAuthDiscovery store is called."
+    username_tmp = @user_name_input.get_value
+    password_tmp = @password_input.get_value
+    username = username_tmp[2, username_tmp.length]
+    password = password_tmp[2, password_tmp.length]
+    puts username, password
+    $discovery_auth.store_userid(username)
+    $discovery_auth.store_password(password)
   end
 
   def handle(event)
@@ -480,6 +486,17 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
       end
     end
     true
+  end
+
+  def store()
+    puts "InitiatorAuthDiscovery store is called."
+    mutual_username_tmp = @mutual_user_name_input.get_value
+    mutual_password_tmp = @mutual_password_input.get_value
+    mutual_username = mutual_username_tmp[2, mutual_username_tmp.length]
+    mutual_password = mutual_password_tmp[2, mutual_password_tmp.length]
+    puts mutual_username, mutual_password
+    $discovery_auth.store_mutual_userid(mutual_username)
+    $discovery_auth.store_mutual_password(mutual_password)
   end
 
   def handle(event)

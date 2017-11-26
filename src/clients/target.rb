@@ -49,6 +49,8 @@ module Yast
       if ret == :next
         p $discovery_auth.fetch_userid()
         p $discovery_auth.fetch_password()
+        p $discovery_auth.fetch_mutual_userid()
+        p $discovery_auth.fetch_mutual_password()
       end
     end
   end
