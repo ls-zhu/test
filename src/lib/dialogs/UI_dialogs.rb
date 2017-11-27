@@ -2266,6 +2266,7 @@ class LUNTable < CWM::Table
     @luns = init_luns
     # @luns_add will store the luns will be created, will not store any exsisted luns.
     @luns_added = []
+    @luns_removed = []
     @luns = generate_items
     @target_name = nil
     @target_tpg = nil
@@ -2323,6 +2324,22 @@ class LUNTable < CWM::Table
     update_table()
   end
 
+  # this function will remove the lun form lun table
+  def table_remove_lun(path)
+    @luns.each do |elem|
+      if elem[3] == path
+        @luns.delete(elem)
+      end
+    end
+    @luns_added.each do |elem|
+      if elem[3] == path
+        @luns_added.delete(elem)
+      end
+    end
+    self.change_items(@luns)
+  end
+
+
   def validate
     puts 'validate() in LUN_table is called.'
     failed_storage = String.new
@@ -2378,13 +2395,6 @@ class LUNTable < CWM::Table
     end
     $target_data.analyze()
     true
-  end
-
-
-  def update_table_bak(luns)
-    puts "in update_table, luns are:"
-    puts luns
-    change_items(luns)
   end
 
   def update_table()
@@ -2725,9 +2735,6 @@ class LUNsTableWidget < CWM::CustomWidget
       when :delete
         puts "In LUN deleting:"
         lun = @lun_table.get_selected
-        #p lun
-        #p @target_name
-        #p @tpg_num
         cmd = "targetcli"
         p1 = "backstores/"
         if lun[4] == "file"
@@ -2739,26 +2746,33 @@ class LUNsTableWidget < CWM::CustomWidget
         p2 = "iscsi/" + @target_name + "/tpg" + @tpg_num + "/luns/ delete lun=" + lun[1]
         p p1
         p p2
-        begin
-          Cheetah.run(cmd, p1)
-        rescue Cheetah::ExecutionFailed => e
-          if e.stderr != nil
-            err_msg = _("Failed to delete backstore of lun") + lun[1] + \
+        msg = _("This will immediately delete LUN ") + lun[2] + \
+              _(". Please confim all initiators have logged out this target.") + \
+              -("Do you want to proceed now?")
+        ret = Yast::Popup.ErrorAnyQuestion(_("Confirm"), msg, _("Yes"), _("No"), :focus_yes)
+        if ret == true
+          begin
+            Cheetah.run(cmd, p2)
+          rescue Cheetah::ExecutionFailed => e
+            if e.stderr != nil
+              err_msg = _("Failed to delete backstore of lun") + lun[1] + \
                       _("Please check whether someone already did it.\n")
-            err_msg += e.stderr
-            Yast::Popup.Error(err_msg)
+              err_msg += e.stderr
+              Yast::Popup.Error(err_msg)
+            end
           end
-        end
 
-        begin
-          Cheetah.run(cmd, p2)
-        rescue Cheetah::ExecutionFailed => e
-          if e.stderr != nil
-            err_msg = _("Failed to delete lun") + lun[1] + \
+          begin
+            Cheetah.run(cmd, p1)
+          rescue Cheetah::ExecutionFailed => e
+            if e.stderr != nil
+              err_msg = _("Failed to delete lun") + lun[1] + \
                       _("Please check whether someone already did it.\n")
-            err_msg += e.stderr
-            Yast::Popup.Error(err_msg)
+              err_msg += e.stderr
+              Yast::Popup.Error(err_msg)
+            end
           end
+          @lun_table.table_remove_lun(lun[3])
         end
     end
     nil
