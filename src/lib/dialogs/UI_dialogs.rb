@@ -123,7 +123,7 @@ class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
   end
 
   def label
-    _("Authentication by initiators\n")
+    _("Authentication by Initiators\n")
   end
 
   # auto called from Yast
@@ -232,19 +232,26 @@ class UserName < CWM::InputField
   end
 
   def validate
-    err_msg = _("Can not use ")
-    illegal_chars = ""
-    chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
-    chars.each do |char|
-      if self.value.include?(char)
-        illegal_chars += char
-        illegal_chars += ", "
+    if self.enabled? == true
+      if self.value.empty? == true
+        err_msg = _("username can not be empty.")
+        Yast::Popup.Error(err_msg)
+        return false
       end
-    end
-    if illegal_chars.empty? != true
-      err_msg = _("Can not use such characters: ") + illegal_chars + _("in username.")
-      Yast::Popup.Error(err_msg)
-      return false
+      err_msg = _("Can not use ")
+      illegal_chars = ""
+      chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
+      chars.each do |char|
+        if self.value.include?(char)
+          illegal_chars += char
+          illegal_chars += ", "
+        end
+      end
+      if illegal_chars.empty? != true
+        err_msg = _("Can not use such characters: ") + illegal_chars + _("in username.")
+        Yast::Popup.Error(err_msg)
+        return false
+      end
     end
     return true
   end
@@ -278,19 +285,26 @@ class Password < CWM::InputField
   end
 
   def validate
-    err_msg = _("Can not use ")
-    illegal_chars = ""
-    chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
-    chars.each do |char|
-      if self.value.include?(char)
-        illegal_chars += char
-        illegal_chars += ", "
+    if self.enabled? == true
+      if self.value.empty? == true
+        err_msg = _("password can not be empty.")
+        Yast::Popup.Error(err_msg)
+        return false
       end
-    end
-    if illegal_chars.empty? != true
-      err_msg = _("Can not use such characters: ") + illegal_chars + _("in password.")
-      Yast::Popup.Error(err_msg)
-      return false
+      err_msg = _("Can not use ")
+      illegal_chars = ""
+      chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
+      chars.each do |char|
+        if self.value.include?(char)
+          illegal_chars += char
+          illegal_chars += ", "
+        end
+      end
+      if illegal_chars.empty? != true
+        err_msg = _("Can not use such characters: ") + illegal_chars + _("in password.")
+        Yast::Popup.Error(err_msg)
+        return false
+      end
     end
     return true
   end
@@ -324,19 +338,26 @@ class MutualUserName < CWM::InputField
   end
 
   def validate
-    err_msg = _("Can not use ")
-    illegal_chars = ""
-    chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
-    chars.each do |char|
-      if self.value.include?(char)
-        illegal_chars += char
-        illegal_chars += ", "
+    if self.enabled? == true
+      if self.value.empty? == true
+        err_msg = _("mutual_username can not be empty.")
+        Yast::Popup.Error(err_msg)
+        return false
       end
-    end
-    if illegal_chars.empty? != true
-      err_msg = _("Can not use such characters: ") + illegal_chars + _("in mutual_username.")
-      Yast::Popup.Error(err_msg)
-      return false
+      err_msg = _("Can not use ")
+      illegal_chars = ""
+      chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
+      chars.each do |char|
+        if self.value.include?(char)
+          illegal_chars += char
+          illegal_chars += ", "
+        end
+      end
+      if illegal_chars.empty? != true
+        err_msg = _("Can not use such characters: ") + illegal_chars + _("in mutual_username.")
+        Yast::Popup.Error(err_msg)
+        return false
+      end
     end
     return true
   end
@@ -370,19 +391,26 @@ class MutualPassword < CWM::InputField
   end
 
   def validate
-    err_msg = _("Can not use ")
-    illegal_chars = ""
-    chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
-    chars.each do |char|
-      if self.value.include?(char)
-        illegal_chars += char
-        illegal_chars += ", "
+    if self.enabled? == true
+      if self.value.empty? == true
+        err_msg = _("mutual_password can not be empty.")
+        Yast::Popup.Error(err_msg)
+        return false
       end
-    end
-    if illegal_chars.empty? != true
-      err_msg = _("Can not use such characters: ") + illegal_chars + _("in mutual_password.")
-      Yast::Popup.Error(err_msg)
-      return false
+      err_msg = _("Can not use ")
+      illegal_chars = ""
+      chars = ["`", "'", "[", "]", "{", "}", "=", "&", "*", "?", "^", "$", "#" ,"|", " "]
+      chars.each do |char|
+        if self.value.include?(char)
+          illegal_chars += char
+          illegal_chars += ", "
+        end
+      end
+      if illegal_chars.empty? != true
+        err_msg = _("Can not use such characters: ") + illegal_chars + _("in mutual_password.")
+        Yast::Popup.Error(err_msg)
+        return false
+      end
     end
     return true
   end

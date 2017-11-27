@@ -26,6 +26,7 @@ module Yast
     include Yast::Logger
     def run
       textdomain "example"
+      msg = ""
       global_tab = GlobalTab.new
       targets_tab = TargetsTab.new
       service_tab = ServiceTab.new
@@ -42,28 +43,48 @@ module Yast
         mutual_userid = $discovery_auth.fetch_mutual_userid()
         mutual_password = $discovery_auth.fetch_mutual_password()
         puts status
-        puts userid
+        p userid
         puts password
         puts mutual_userid
         puts mutual_password
         cmd = 'targetcli'
-        p1 = "iscsi/ set discovery_auth userid = " + userid + " password = " + password + \
-               " mutual_userid = " + mutual_userid + " mutual_password = " + mutual_password
+        p1 = "iscsi/ set discovery_auth "
+        if userid.empty? != true
+          p1 += ("userid=" + userid + " ")
+        end
+        if password != nil
+          p1 += ("password=" + password + " ")
+        end
+        if mutual_userid != nil
+          p1 += ("mutual_userid=" + mutual_userid + " ")
+        end
+        if mutual_password != nil
+          p1 += ("mutual_password=" + mutual_password)
+        end
+
+        #p1 = "iscsi/ set discovery_auth userid=" + userid + " password=" + password + \
+         #      " mutual_userid=" + mutual_userid + " mutual_password=" + mutual_password
         if status == true
           puts "It is true"
-          p1 += " enable = 1"
+          p1 += " enable=1"
+          if (userid == mutual_userid)
+            msg = _("It seems that Authentication by Initiators and Authentication by Targets using a same username")
+            msg += _("This may cause a CHAP negotiation error, an authenticaiton failure.")
+          end
         else
           puts "It is False"
-          p1 += " enable = 0"
+          p1 = "iscsi/ set discovery_auth enable = 0"
         end
         p p1
         begin
           Cheetah.run(cmd, p1)
         rescue Cheetah::ExecutionFailed => e
-          Yast::Popup.Error(e.stderr) unless e.stderr.nil?
+          if e.stderr != nil
+            err_msg = _("Failed to set discovery authentication with errors: ")
+            err_msg += e.stderr
+            Yast::Popup.Error(err_msg)
+          end
         end
-        #TODO: Add code to check whether users provide the same username and password for incomfing and outgoing auth,
-        #that will not work
       end
     end
   end
