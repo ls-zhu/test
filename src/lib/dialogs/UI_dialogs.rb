@@ -1856,7 +1856,7 @@ class InitiatorACLs < CWM::CustomWidget
             PushButton(Id(:edit_lun), _('Edit LUN')),
             PushButton(Id(:edit_auth), _('Edit Auth')),
             PushButton(Id(:delete), _('Delete')),
-            PushButton(Id(:copy), _('Copy')),
+            #PushButton(Id(:copy), _('Copy')),
         )
     )
   end
