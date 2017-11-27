@@ -129,6 +129,11 @@ class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
   # auto called from Yast
   def init
     self.value = @config # TODO: read config
+    if self.value == false
+      @container_class.disable_input_fields()
+    else
+      @container_class.enable_input_fields()
+    end
   end
 
   def store
@@ -172,6 +177,11 @@ class Auth_by_Targets_CheckBox < ::CWM::CheckBox
   def init
     self.value = @config # TODO: read config
     p "Auth_by_Targets_CheckBox got init value:", @config
+    if self.value == false
+      @container_class.disable_input_fields()
+    else
+      @container_class.enable_input_fields()
+    end
   end
 
   def store
@@ -1488,18 +1498,19 @@ class ACLInitiatorAuth < CWM::CustomWidget
     @info = info
     mutual_username = acl_hash.fetch_mutual_userid.gsub(/\s+/,'')
     mutual_password = acl_hash.fetch_mutual_password.gsub(/\s+/,'')
+    @mutual_user_name_input = MutualUserName.new(mutual_username)
+    @mutual_password_input = MutualPassword.new(mutual_password)
     p "In ACLInitiatorAuth initialize():  "
     p mutual_username, mutual_password
     #if (@mutual_password != " \n") && (@mutual_username != " \n")
     if (mutual_password.empty? != true) && (mutual_username.empty? != true)
       @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, true)
+      enable_input_fields
       #@status = true
     else
       @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, false)
       #@status = false
     end
-    @mutual_user_name_input = MutualUserName.new(mutual_username)
-    @mutual_password_input = MutualPassword.new(mutual_password)
     self.handle_all_events = true
   end
 
@@ -1607,16 +1618,17 @@ class ACLTargetAuth < CWM::CustomWidget
     @info = info
     username = acl_hash.fetch_userid.gsub(/\s+/,'')
     password = acl_hash.fetch_password.gsub(/\s+/,'')
+    @user_name_input = UserName.new(username)
+    @password_input = Password.new(password)
     #if (@password != " \n") && (@username != " \n")
     if (password.empty? != true) && (username.empty? != true)
       @auth_by_target = Auth_by_Targets_CheckBox.new(self, true)
+      #enable_input_fields
       #@status == true
     else
       @auth_by_target = Auth_by_Targets_CheckBox.new(self, false)
       #@status == false
     end
-    @user_name_input = UserName.new(username)
-    @password_input = Password.new(password)
     self.handle_all_events = true
   end
 
