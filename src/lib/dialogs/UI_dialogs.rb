@@ -2668,7 +2668,7 @@ class LUNsTableWidget < CWM::CustomWidget
       @lun_table,
       HBox(
         PushButton(Id(:add), _('Add')),
-        PushButton(Id(:edit), _('Edit')),
+        #PushButton(Id(:edit), _('Edit')),
         PushButton(Id(:delete), _('Delete'))
       )
     )
