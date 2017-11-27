@@ -236,20 +236,20 @@ end
 
 class TargetList
   @target_hash_list = nil
-  def print()
+  def print_list()
     @target_hash_list.each do |key, value|
-     #p value
+     p value
     end
   end
 
 #This function will return a array of target names
   def get_target_names()
-    #p "get_target_names() called"
     target_names_array = Array.new
     @target_hash_list.each do |key, value|
       target_names_array.push(key)
       #p key
     end
+    p "in get_target_names, target_names_array are:", target_names_array
     return target_names_array
   end
 
@@ -341,8 +341,9 @@ class TargetData
 
 
   def analyze()
-    # TODO: Need to add some error handling code here, like failed to start the service.
-    @target_outout = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
+    # We need to re-new @target_list, because something may be deleted
+    @targets_list = TargetList.new
+    @target_outout = `targetcli ls`.split("\n")
     @target_outout.each do |line|
       #handle iqn targets here.
       if @re_iqn_target.match(line)
@@ -490,8 +491,9 @@ class TargetData
 
   end # end of the function
 
-  def print()
-    @targets_list.print()
+  def print_targets()
+    puts "print_targets() called"
+    @targets_list.print_list()
     # @targets_list.print_target_names()
   end
 

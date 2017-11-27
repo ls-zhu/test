@@ -89,8 +89,8 @@ module Yast
 end
 
 $target_data = TargetData.new
+#$target_data.print_targets
 #$back_stores = Backstores.new
 #back_stores.analyze
 $discovery_auth = DiscoveryAuth.new
-#$target_data.print
 Yast::ExampleDialog.new.run

@@ -2093,12 +2093,6 @@ end
 
 class TargetTable < CWM::Table
   def initialize
-    # puts "initialize() is called."
-    # functions like initialize and items would be called multiple times by its
-    # container(and its container) working not properly
-    # That's the reason why we need @items_need_refresh to control that. We should remove @items_need_refresh
-    # when CWM work well. We don't need locks to protect it.
-    # @items_need_refresh = false
     @targets = generate_items()
     @targets_names = $target_data.get_target_names_array
   end
@@ -2108,6 +2102,7 @@ class TargetTable < CWM::Table
   end
 
   def generate_items
+    $target_data.analyze()
     @targets_names = $target_data.get_target_names_array
     item_array = nil
     @targets = Array.new
@@ -2139,24 +2134,10 @@ class TargetTable < CWM::Table
     return nil
   end
 
-  # this function will remove a target from the table.
-  def remove_target_item(id)
-    # p @targets
-    @targets.each do |elem|
-      # printf("id is %d.\n", id)
-      if elem[0] == id
-        # printf("elem[0] is %d.\n", elem[0]);
-        # p elem
-      end
-      @targets.delete_if { |elem| elem[0] == id }
-    end
-    update_table
-  end
-
   def update_table
-    # puts "update_table() is called."
     $target_data.analyze
     @targets_names = $target_data.get_target_names_array
+    p "In update_table, @targets_names are:", @targets_names
     change_items(generate_items)
   end
 end
@@ -2235,10 +2216,26 @@ class TargetsTableWidget < CWM::CustomWidget
         info = @edit_target_page.get_target_info()
         create_ACLs_dialog(info)
       when :delete
-        id = @target_table.get_selected
-        # puts "Clicked Delete button"
-        printf("The selected value is %s.\n", id)
-        # @target_table.remove_target_item(id)
+        target = @target_table.get_selected
+        puts "in :delete, target is:"
+        p target
+        cmd = 'targetcli'
+        p1 = 'iscsi/ delete ' + target[1]
+        puts "P1 is : ", p1
+        begin
+          Cheetah.run(cmd, p1)
+        rescue Cheetah::ExecutionFailed => e
+          if e.stderr != nil
+            err_msg = _("Failed to delete target: ")
+            err_msg += (target[1] + " .")
+            err_msg += e.stderr
+          end
+          Yast::Popup.Error(err_msg)
+        end
+        #p `targetcli iscsi/ ls`.split("\n")
+        $target_data.analyze()
+        #$target_data = TargetData.new
+        #$target_data.print_targets
         @target_table.update_table
     end
     nil
