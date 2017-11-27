@@ -1484,23 +1484,27 @@ class ACLInitiatorAuth < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize(acl_hash)
-    @mutual_username = acl_hash.fetch_mutual_userid()
-    @mutual_password = acl_hash.fetch_mutual_password()
-    if (@mutual_password != " \n") && (@mutual_username != " \n")
+  def initialize(acl_hash, info)
+    @info = info
+    mutual_username = acl_hash.fetch_mutual_userid.gsub(/\s+/,'')
+    mutual_password = acl_hash.fetch_mutual_password.gsub(/\s+/,'')
+    p "In ACLInitiatorAuth initialize():  "
+    p mutual_username, mutual_password
+    #if (@mutual_password != " \n") && (@mutual_username != " \n")
+    if (mutual_password.empty? != true) && (mutual_username.empty? != true)
       @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, true)
-      @status = true
+      #@status = true
     else
       @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, false)
-      @status = false
+      #@status = false
     end
-    @mutual_user_name_input = MutualUserName.new(@mutual_username)
-    @mutual_password_input = MutualPassword.new(@mutual_password)
+    @mutual_user_name_input = MutualUserName.new(mutual_username)
+    @mutual_password_input = MutualPassword.new(mutual_password)
     self.handle_all_events = true
   end
 
   def init()
-    if @status == false
+    if @auth_by_initiator.value == false
       disable_input_fields()
     end
   end
@@ -1529,12 +1533,64 @@ class ACLInitiatorAuth < CWM::CustomWidget
     [:notify]
   end
 
-  def validate
-    true
-  end
-
   def handle(event)
     nil
+  end
+
+  def validate()
+    puts "ACLInitiatorAuth validate is called."
+    mutual_username = @mutual_user_name_input.get_value.gsub(/\s+/,'')
+    mutual_password = @mutual_password_input.get_value.gsub(/\s+/,'')
+    puts mutual_username, mutual_password
+    target_name = @info[0]
+    tpg_num = @info[1]
+    initiator_name = @info[2]
+    p target_name, tpg_num, initiator_name
+    cmd = "targetcli"
+    if @auth_by_initiator.value == true
+      p1 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
+         "/ set auth mutual_userid=" + mutual_username + " mutual_password=" + mutual_password
+      #p p1
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          err_msg = _("Failed to change Authentication by Initiators.")
+          err_msg += e.stderr
+          Yast::Popup.Error(err_msg)
+          return false
+        end
+      end
+    else
+      p1 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
+         "/ set auth mutual_userid="
+      p2 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
+         "/ set auth mutual_password="
+      p p1
+      p p2
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          err_msg = _("Failed to clear Authentication by Initiators.")
+          err_msg += e.stderr
+          Yast::Popup.Error(err_msg)
+          return false
+        end
+      end
+
+      begin
+        Cheetah.run(cmd, p2)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          err_msg = _("Failed to clear Authentication by Initiators.")
+          err_msg += e.stderr
+          Yast::Popup.Error(err_msg)
+          return false
+        end
+      end
+    end
+    return true
   end
 
   def help
@@ -1547,23 +1603,25 @@ class ACLTargetAuth < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize(acl_hash)
-    @username = acl_hash.fetch_userid()
-    @password = acl_hash.fetch_password()
-    if (@password != " \n") && (@username != " \n")
+  def initialize(acl_hash, info)
+    @info = info
+    username = acl_hash.fetch_userid.gsub(/\s+/,'')
+    password = acl_hash.fetch_password.gsub(/\s+/,'')
+    #if (@password != " \n") && (@username != " \n")
+    if (password.empty? != true) && (username.empty? != true)
       @auth_by_target = Auth_by_Targets_CheckBox.new(self, true)
-      @status == true
+      #@status == true
     else
       @auth_by_target = Auth_by_Targets_CheckBox.new(self, false)
-      @status == false
+      #@status == false
     end
-    @user_name_input = UserName.new(@username)
-    @password_input = Password.new(@password)
+    @user_name_input = UserName.new(username)
+    @password_input = Password.new(password)
     self.handle_all_events = true
   end
 
   def init()
-    if @status == false
+    if @auth_by_target.value == false
       disable_input_fields()
     end
   end
@@ -1592,12 +1650,65 @@ class ACLTargetAuth < CWM::CustomWidget
     [:notify]
   end
 
-  def validate
-    true
-  end
-
   def handle(event)
     nil
+  end
+
+
+  def validate()
+    puts "ACLTargetAuth validate is called."
+    username = @user_name_input.get_value.gsub(/\s+/,'')
+    password = @password_input.get_value.gsub(/\s+/,'')
+    puts username, password
+    target_name = @info[0]
+    tpg_num = @info[1]
+    initiator_name = @info[2]
+    p target_name, tpg_num, initiator_name
+    cmd = "targetcli"
+    if @auth_by_target.value == true
+      p1 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
+         "/ set auth userid=" + username + " password=" + password
+      #p p1
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          err_msg = _("Failed to change Authentication by Targets.")
+          err_msg += e.stderr
+          Yast::Popup.Error(err_msg)
+          return false
+        end
+      end
+    else
+      p1 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
+         "/ set auth userid="
+      p2 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
+         "/ set auth password="
+      p p1
+      p p2
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          err_msg = _("Failed to clear Authentication by Targets.")
+          err_msg += e.stderr
+          Yast::Popup.Error(err_msg)
+          return false
+        end
+      end
+
+      begin
+        Cheetah.run(cmd, p2)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          err_msg = _("Failed to clear Authentication by Targets.")
+          err_msg += e.stderr
+          Yast::Popup.Error(err_msg)
+          return false
+        end
+      end
+    end
+    return true
   end
 
   def help
@@ -1628,10 +1739,11 @@ class EditAuthWidget < CWM::CustomWidget
     if acls_group_hash != nil
       all_acls_hash = acls_group_hash.get_all_acls()
     end
+    info = [target_name, tpg_num, initiator_name]
     all_acls_hash.each do |key, value|
       if key == initiator_name
-        @acl_initiator_auth = ACLInitiatorAuth.new(value)
-        @acl_target_auth = ACLTargetAuth.new(value)
+        @acl_initiator_auth = ACLInitiatorAuth.new(value, info)
+        @acl_target_auth = ACLTargetAuth.new(value, info)
       end
     end
     self.handle_all_events = true

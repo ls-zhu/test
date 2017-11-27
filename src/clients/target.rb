@@ -62,8 +62,6 @@ module Yast
           p1 += ("mutual_password=" + mutual_password)
         end
 
-        #p1 = "iscsi/ set discovery_auth userid=" + userid + " password=" + password + \
-         #      " mutual_userid=" + mutual_userid + " mutual_password=" + mutual_password
         if status == true
           puts "It is true"
           p1 += " enable=1"
