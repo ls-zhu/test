@@ -1992,7 +1992,7 @@ class AddTargetWidget < CWM::CustomWidget
     @IP_selsection_box = IpSelectionComboBox.new
     @target_bind_all_ip_checkbox = BindAllIP.new
     @use_login_auth = UseLoginAuth.new
-    @lun_table_widget = LUNsTableWidget.new(luns)
+    @lun_table_widget = LUNsTableWidget.new(luns, target_name, tpg_num)
   end
 
   def opt
@@ -2298,8 +2298,12 @@ class LUNTable < CWM::Table
     @luns
   end
 
-  def get_selected
-    value
+  def get_selected()
+    @luns.each do |item|
+      if item[0] == self.value
+        return item
+      end
+    end
   end
 
   # This function will return the array @luns, LUNsTableWidget will use this to decide the lun number
@@ -2316,17 +2320,7 @@ class LUNTable < CWM::Table
   def add_lun_item(item)
     @luns.push(item)
     @luns_added.push(item)
-    update_table(@luns)
-  end
-
-  # this function will delete a LUN both in a target tpg#n/luns and /backstore/fileio or block via targetcli
-  def delete_lun(lun_str); end
-
-  # this function will remove a lun from the table, will try to delete it from @luns_added and @luns
-  def table_remove_lun_item(id)
-    @luns_added.delete_if { |item| item[0] == id }
-    @luns.delete_if { |item| item[0] == id }
-    update_table(@luns)
+    update_table()
   end
 
   def validate
@@ -2368,7 +2362,7 @@ class LUNTable < CWM::Table
         if e.stderr != nil
           failed_storage += (lun[3] + "\n")
           table_remove_lun_item(lun[0])
-          update_table(@luns)
+          update_table()
           next
         end
       end
@@ -2387,11 +2381,17 @@ class LUNTable < CWM::Table
   end
 
 
-  def update_table(luns)
+  def update_table_bak(luns)
     puts "in update_table, luns are:"
     puts luns
     change_items(luns)
   end
+
+  def update_table()
+    luns = generate_items
+    change_items(luns)
+  end
+
 end
 
 class LunNumInput < CWM::IntField
@@ -2665,11 +2665,12 @@ class LUNsTableWidget < CWM::CustomWidget
   include Yast::I18n
   include Yast::UIShortcuts
   include Yast::Logger
-  def initialize(luns)
+  def initialize(luns, target_name, tpg_num)
     self.handle_all_events = true
     @lun_table = LUNTable.new(luns)
     @lun_details = LUNDetailsWidget.new
-    @target_name = nil
+    @target_name = target_name
+    @tpg_num = tpg_num
   end
 
   def contents
@@ -2709,27 +2710,56 @@ class LUNsTableWidget < CWM::CustomWidget
   def handle(event)
     # puts event
     case event['ID']
-    when :add
-      ret = @lun_details.run
-      if ret != nil
-        lun_number = ret[0]
-        lun_name = ret[1]
-        file = ret[2]
-        if !file.nil? && (File.exist?(file) == true)
-          @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
+      when :add
+        ret = @lun_details.run
+        if ret != nil
+          lun_number = ret[0]
+          lun_name = ret[1]
+          file = ret[2]
+          if !file.nil? && (File.exist?(file) == true)
+            @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
+          end
+          puts 'Got the lun info:'
+          puts ret
         end
-        puts 'Got the lun info:'
-        puts ret
-      end
-    when :edit
-      file = UI.AskForExistingFile('/', '', _('Select a file or device'))
-      unless file.nil?
-        luns = @lun_table.get_luns
-        lun_number = rand(100)
-        # lun path to lun name. Like /home/lszhu/target.raw ==> home_lszhu_target.raw
-        lun_name = file[1, file.length].gsub(/\//, '_')
-        @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
-      end
+      when :delete
+        puts "In LUN deleting:"
+        lun = @lun_table.get_selected
+        #p lun
+        #p @target_name
+        #p @tpg_num
+        cmd = "targetcli"
+        p1 = "backstores/"
+        if lun[4] == "file"
+          p1 += "fileio delete " + lun[2]
+        end
+        if lun[4] == "blockSpecial"
+          p1 += "block delete " + lun[2]
+        end
+        p2 = "iscsi/" + @target_name + "/tpg" + @tpg_num + "/luns/ delete lun=" + lun[1]
+        p p1
+        p p2
+        begin
+          Cheetah.run(cmd, p1)
+        rescue Cheetah::ExecutionFailed => e
+          if e.stderr != nil
+            err_msg = _("Failed to delete backstore of lun") + lun[1] + \
+                      _("Please check whether someone already did it.\n")
+            err_msg += e.stderr
+            Yast::Popup.Error(err_msg)
+          end
+        end
+
+        begin
+          Cheetah.run(cmd, p2)
+        rescue Cheetah::ExecutionFailed => e
+          if e.stderr != nil
+            err_msg = _("Failed to delete lun") + lun[1] + \
+                      _("Please check whether someone already did it.\n")
+            err_msg += e.stderr
+            Yast::Popup.Error(err_msg)
+          end
+        end
     end
     nil
   end
