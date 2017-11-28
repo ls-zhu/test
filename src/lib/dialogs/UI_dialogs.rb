@@ -1763,11 +1763,18 @@ class InitiatorACLs < CWM::CustomWidget
   end
 
   def validate
-    ret = Yast::Popup.ErrorAnyQuestion(_("Warning"), _("test message"), _("Yes"), _("No"), :focus_yes)
-    if ret == true
-      return true
-    else
-      return false
+    cmd = "targetcli iscsi/" + @target_name + "/tpg" + @target_tpg + "/ get attribute authentication"
+    cmd_out = `#{cmd}`
+    ret = cmd_out[15, cmd_out.length]
+    if ret == "1 \n"
+      msg = _("Use Login Authentication is enabled. Please make sure proper ACLs has been added.") + \
+          _("Or the target may not be accsessible. Do you want to proceed?")
+      ret = Yast::Popup.ErrorAnyQuestion(_("Warning"), msg, _("Yes"), _("No"), :focus_yes)
+      if ret == true
+        return true
+      else
+        return false
+      end
     end
     return true
   end
@@ -2075,11 +2082,16 @@ class TargetsTableWidget < CWM::CustomWidget
 
   def create_ACLs_dialog(info)
     if info.empty? != true
-      @initiator_acls = InitiatorACLs.new(info[0], info[1])
-      contents = VBox(@initiator_acls)
-      Yast::Wizard.CreateDialog
-      CWM.show(contents, caption: _('Modify initiators ACLs'))
-      Yast::Wizard.CloseDialog
+      cmd = "targetcli iscsi/" + info[0] + "/tpg" + info[1] + "/ get attribute authentication"
+      cmd_out = `#{cmd}`
+      ret = cmd_out[15, cmd_out.length]
+      if ret == "1 \n"
+        @initiator_acls = InitiatorACLs.new(info[0], info[1])
+        contents = VBox(@initiator_acls)
+        Yast::Wizard.CreateDialog
+        CWM.show(contents, caption: _('Modify initiators ACLs'))
+        Yast::Wizard.CloseDialog
+      end
     end
   end
 
