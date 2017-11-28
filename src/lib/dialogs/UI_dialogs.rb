@@ -916,6 +916,8 @@ class ACLTable < CWM::Table
     @target_name = target_name
     @tpg_num = tpg
     @acls = generate_items()
+    @acls_add =[]
+    @acls_delete = []
   end
 
   def get_all_acls_hash
@@ -992,6 +994,25 @@ class ACLTable < CWM::Table
 
   def add_item(item)
     @acls.push(item)
+    @acls_add.push(item)
+    self.change_items(@acls)
+  end
+
+  def delete_item(item)
+    @acls_delete.push(item)
+
+    @acls.each do |elem|
+      if elem[1] == item[1]
+        @acls.delete(elem)
+      end
+    end
+
+    @acls_add.each do |elem|
+      if elem[1] == item[1]
+        @acls_add.delete(elem)
+      end
+    end
+
     self.change_items(@acls)
   end
 
@@ -1004,14 +1025,47 @@ class ACLTable < CWM::Table
   end
 
   def validate
-    true
+    cmd = "targetcli"
+    err_msg = _("Failed to create ACLs witn initiator name: ")
+    failed_acls = ""
+    @acls_delete.each do |elem|
+      p1 = "iscsi/" + @target_name + "/tpg" + @tpg_num.to_s + "/acls delete " + elem[1]
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        #TODO add log here
+      end
+    end
+
+    @acls_add.each do |elem|
+      p1 = "iscsi/" + @target_name + "/tpg" + @tpg_num.to_s + "/acls create " + elem[1]
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          failed_acls += (elem[1] + "\n")
+          @acls.delete(elem)
+          self.change_items(@acls)
+        end
+      end
+
+      if failed_acls.empty? != true
+        err_msg += failed_acls
+        err_msg += _("Please check whether initiator names are valid.")
+        Yast::Popup.Error(err_msg)
+        return false
+      end
+
+      true
+    end
   end
+
 end
 
+
 class InitiatorNameInput < CWM::InputField
-  def initialize(str)
+  def initialize()
     textdomain "iscsi-lio-server"
-    @config = str
   end
 
   def label
@@ -1019,8 +1073,13 @@ class InitiatorNameInput < CWM::InputField
   end
 
   def init
-    self.value = @config
+    self.value = ""
   end
+
+  def store
+    @config = self.value
+  end
+
   def validate
     iscsi_name_max_length = 233
     if value.empty? == true
@@ -1037,11 +1096,8 @@ class InitiatorNameInput < CWM::InputField
     return true
   end
 
-  def store
-    @config = value
-  end
-
   def get_value
+    puts "IN get_value(), @config is:", @config
     return @config
   end
 end
@@ -1052,7 +1108,7 @@ class ImportLUNsCheckbox < ::CWM::CheckBox
   end
 
   def label
-    _('Import LUNs from TPG')
+    _('Import all LUNs from current TPG')
   end
 
   def init
@@ -1068,8 +1124,9 @@ end
 class AddAclDialog < CWM::Dialog
   def initialize
     textdomain "iscsi-lio-server"
-    @initiator_name_input = InitiatorNameInput.new("")
+    @initiator_name_input = InitiatorNameInput.new
     @import_luns = ImportLUNsCheckbox.new()
+    @action = ""
   end
 
   def wizard_create_dialog
@@ -1107,7 +1164,8 @@ class AddAclDialog < CWM::Dialog
 
   def run
     super
-    return @initiator_name_input.get_value()
+    initiator_name = @initiator_name_input.get_value()
+    return initiator_name
   end
 end
 
@@ -1817,7 +1875,9 @@ class InitiatorACLs < CWM::CustomWidget
         initiator_name = item[1]
         @edit_auth_dialog = EditAuthDialog.new(initiator_name, @target_name,@target_tpg)
         @edit_auth_dialog.run
-
+      when :delete
+        item = @acls_table.get_selected()
+        @acls_table.delete_item(item)
   end
     nil
   end
