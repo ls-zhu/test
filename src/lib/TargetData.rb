@@ -585,3 +585,18 @@ class DiscoveryAuth
     #p @discovery_auth
   end
 end
+
+
+class Global
+  def initialize
+    @show_del_lun_warning = true
+  end
+
+  def disable_warning_del_lun
+    @show_del_lun_warning = false
+  end
+
+  def del_lun_warning_enable?
+    return @show_del_lun_warning
+  end
+end

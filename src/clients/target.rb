@@ -89,6 +89,7 @@ module Yast
 end
 
 $target_data = TargetData.new
+$global_data = Global.new
 #$target_data.print_targets
 #$back_stores = Backstores.new
 #back_stores.analyze

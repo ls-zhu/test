@@ -2746,11 +2746,18 @@ class LUNsTableWidget < CWM::CustomWidget
         p2 = "iscsi/" + @target_name + "/tpg" + @tpg_num + "/luns/ delete lun=" + lun[1]
         p p1
         p p2
-        msg = _("This will immediately delete LUN ") + lun[2] + \
-              _(". Please confim all initiators have logged out this target.") + \
+        ret = nil
+        if $global_data.del_lun_warning_enable? == true
+          msg = _("This will immediately delete LUNs. ") + \
+              _("Please confim all initiators have logged out this target to avoid IO errors") + \
               -("Do you want to proceed now?")
-        ret = Yast::Popup.ErrorAnyQuestion(_("Confirm"), msg, _("Yes"), _("No"), :focus_yes)
-        if ret == true
+          ret = Yast::Popup.ErrorAnyQuestion(_("Confirm"), msg, _("Yes and Don't show this again"), _("No"), :focus_yes)
+          if ret == true
+            $global_data.disable_warning_del_lun
+          end
+        end
+        # we will delete luns when ret == nil(not shown the warning dialog) or ret == true
+        if ret != false
           begin
             Cheetah.run(cmd, p2)
           rescue Cheetah::ExecutionFailed => e
