@@ -41,11 +41,6 @@ module Yast
         password = $discovery_auth.fetch_password()
         mutual_userid = $discovery_auth.fetch_mutual_userid()
         mutual_password = $discovery_auth.fetch_mutual_password()
-        puts status
-        p userid
-        puts password
-        puts mutual_userid
-        puts mutual_password
         cmd = 'targetcli'
         p1 = "iscsi/ set discovery_auth "
         if userid.empty? != true
@@ -62,17 +57,14 @@ module Yast
         end
 
         if status == true
-          puts "It is true"
           p1 += " enable=1"
           if (userid == mutual_userid)
             msg = _("It seems that Authentication by Initiators and Authentication by Targets using a same username")
             msg += _("This may cause a CHAP negotiation error, an authenticaiton failure.")
           end
         else
-          puts "It is False"
           p1 = "iscsi/ set discovery_auth enable = 0"
         end
-        p p1
         begin
           Cheetah.run(cmd, p1)
         rescue Cheetah::ExecutionFailed => e
@@ -89,8 +81,5 @@ end
 
 $target_data = TargetData.new
 $global_data = Global.new
-#$target_data.print_targets
-#$back_stores = Backstores.new
-#back_stores.analyze
 $discovery_auth = DiscoveryAuth.new
 Yast::ExampleDialog.new.run
