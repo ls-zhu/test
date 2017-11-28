@@ -162,7 +162,6 @@ class Auth_by_Targets_CheckBox < ::CWM::CheckBox
 
   def init
     self.value = @config
-    p "Auth_by_Targets_CheckBox got init value:", @config
     if self.value == false
       @container_class.disable_input_fields()
     else
@@ -406,31 +405,28 @@ end
 
 module Yast
   class ServiceTab < ::CWM::Tab
-    # @fire_wall_service = nil
     include Yast::I18n
     include Yast::UIShortcuts
     def initialize
       textdomain "iscsi-lio-server"
-      # Yast.import "SuSEFirewall"
       self.initial = true
-      @service = Yast::SystemdService.find('targetcli')
+      @service = Yast::SystemdService.find("sshd.service")
       @service_status = ::UI::ServiceStatus.new(@service, reload_flag: true, reload_flag_label: :restart)
-      # self.Read()
-      # SuSEFirewall.Read()
     end
-
-    def Read
-      SuSEFirewall.Read()
-    end
-
     def contents
       HBox(
-        ::CWM::WrapperWidget.new(
-          CWMFirewallInterfaces.CreateOpenFirewallWidget('services' => ['service:target']),
-          id: 'firewall'
-        ),
-        @service_status.widget
+          @service_status.widget
       )
+    end
+
+    def handle(event)
+      puts event
+      @service_status.handle_input(event["ID"])
+      nil
+    end
+
+    def opt
+      [:notify]
     end
 
     def label
@@ -438,6 +434,7 @@ module Yast
     end
   end
 end
+
 
 class TargetAuthDiscovery < CWM::CustomWidget
   include Yast
@@ -456,6 +453,17 @@ class TargetAuthDiscovery < CWM::CustomWidget
 
 
   def contents
+    HCenter(
+        VBox(
+            @auth_by_target,
+            HBox(
+                @user_name_input,
+                @password_input,
+            ),
+        )
+
+    )
+=begin
     VBox(
         @auth_by_target,
         HBox(
@@ -463,6 +471,7 @@ class TargetAuthDiscovery < CWM::CustomWidget
             @password_input,
         ),
     )
+=end
   end
 
   def disable_checkbox()
@@ -508,7 +517,6 @@ class TargetAuthDiscovery < CWM::CustomWidget
   def store()
     username = @user_name_input.get_value.gsub(/\s+/,'')
     password = @password_input.get_value.gsub(/\s+/,'')
-    puts username, password
     $discovery_auth.store_userid(username)
     $discovery_auth.store_password(password)
   end
@@ -588,10 +596,8 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
   end
 
   def store()
-    puts "InitiatorAuthDiscovery store is called."
     mutual_username = @mutual_user_name_input.get_value.gsub(/\s+/,'')
     mutual_password = @mutual_password_input.get_value.gsub(/\s+/,'')
-    puts mutual_username, mutual_password
     $discovery_auth.store_mutual_userid(mutual_username)
     $discovery_auth.store_mutual_password(mutual_password)
   end
@@ -646,11 +652,23 @@ class DiscoveryAuthWidget < CWM::CustomWidget
   end
 
   def contents
+    HVCenter(
+        VBox(
+            HSpacing(2),
+            Left(
+                @no_discovery_auth_checkbox
+            ),
+            @target_discovery_auth,
+            @initiator_discovery_auth,
+        ),
+    )
+=begin
     VBox(
         @no_discovery_auth_checkbox,
         @target_discovery_auth,
         @initiator_discovery_auth,
     )
+=end
   end
 
   def opt
@@ -1460,7 +1478,6 @@ class ACLInitiatorAuth < CWM::CustomWidget
   def validate()
     mutual_username = @mutual_user_name_input.get_value.gsub(/\s+/,'')
     mutual_password = @mutual_password_input.get_value.gsub(/\s+/,'')
-    puts mutual_username, mutual_password
     target_name = @info[0]
     tpg_num = @info[1]
     initiator_name = @info[2]
@@ -1571,7 +1588,6 @@ class ACLTargetAuth < CWM::CustomWidget
   def validate()
     username = @user_name_input.get_value.gsub(/\s+/,'')
     password = @password_input.get_value.gsub(/\s+/,'')
-    puts username, password
     target_name = @info[0]
     tpg_num = @info[1]
     initiator_name = @info[2]
@@ -2034,7 +2050,6 @@ class TargetTable < CWM::Table
 
   def get_selected
     @targets.each do |target|
-      p target
       if target[0] == self.value
         return target
       end
@@ -2130,7 +2145,6 @@ class TargetsTableWidget < CWM::CustomWidget
           if value[4] == "blockSpecial"
             p1 += "block delete " + value[2]
           end
-          puts p1
           Cheetah.run(cmd, p1)
         end
         p2 = 'iscsi/ delete ' + target[1]
@@ -2234,7 +2248,6 @@ class LUNTable < CWM::Table
 
   def validate
     failed_storage = String.new
-    p @luns_added
     @luns_added.each do |lun|
       cmd = 'targetcli'
       if lun[2].empty? == false
@@ -2350,8 +2363,6 @@ class LUNPathInput < CWM::InputField
   end
 
   def get_value
-    puts "In get_value(), value is :"
-    puts self.value
     return self.value
   end
 
@@ -2607,8 +2618,6 @@ class LUNsTableWidget < CWM::CustomWidget
           if !file.nil? && (File.exist?(file) == true)
             @lun_table.add_lun_item([rand(9999), lun_number, lun_name, file, File.ftype(file)])
           end
-          puts 'Got the lun info:'
-          puts ret
         end
       when :delete
         lun = @lun_table.get_selected

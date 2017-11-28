@@ -1,12 +1,8 @@
-# class ACL_group is the acls group under a iSCSI entry
 class Backstores
   def initialize()
     @backstore_path = nil
     @re_backstore_path = Regexp.new(/\/[\w\/\.]+\s/)
-    #@re_backstore_name = Regexp.new(/\/[\w\/\.]+\s/)
-    #@backstores_list should Hash.new if we need to store storage name like iscsi_sdb
     @backstores_list = Array.new
-    #p @output
     self.analyze
   end
 
@@ -18,8 +14,6 @@ class Backstores
         @backstores_list.push(@backstore_path.to_s.strip)
       end
     end
-    #p "In backstores"
-    #p @backstores_list
   end
 
   def get_backstores_list
@@ -28,15 +22,8 @@ class Backstores
 
   #This function will return whether the backstore(path) already exsited
   def validate_backstore_exist(str)
-    #puts "validate_backstore_exist() is called."
-    #puts "The backstores_list is"
-    #puts @backstores_list
     @backstores_list.each do |backstore|
-      #puts "in the loop"
-      #puts backstore
-      #puts str
       if backstore == str
-        #found the path(str) already exsited in the backsotre list, return true if exist
         return true
       end
     end
@@ -153,7 +140,6 @@ class TPG
   @up_level_target = nil
   @luns_list = nil
   def initialize(number)
-    # printf("Create a TPG with number %d.\n",number)
     @tpg_number = number
     @acls_hash_list = Hash.new
     @luns_list = Hash.new
@@ -204,17 +190,14 @@ class Target
   @target_name=nil
   @tpg_hash_list=nil
   def initialize(name)
-    #printf("Initializing a target, name is %s.\n",name)
     @target_name = name
     @tpg_hash_list = Hash.new
   end
 
-  #Hash opertion to store a TPG
   def store_tpg(tpg_number)
     @tpg_hash_list.store(tpg_number, TPG.new(tpg_number))
   end
 
-  #Hash operation to fetch a TPG
   def fetch_tpg(tpg_number)
      @tpg_hash_list.fetch(tpg_number)
   end
@@ -241,7 +224,6 @@ class TargetList
   @target_hash_list = nil
   def print_list()
     @target_hash_list.each do |key, value|
-     p value
     end
   end
 
@@ -250,7 +232,6 @@ class TargetList
     target_names_array = Array.new
     @target_hash_list.each do |key, value|
       target_names_array.push(key)
-      #p key
     end
     return target_names_array
   end
@@ -270,7 +251,6 @@ end
 class TargetData
 
   def initialize()
-    #puts "initialize a TargetData class"
     @re_iqn_target = Regexp.new(/iqn\.\d{4}\-\d{2}\.[\w\.:\-]+\s\.+\s\[TPGs:\s\d+\]/)
     @re_iqn_name = Regexp.new(/iqn\.\d{4}-\d{2}\.[\w\.:\-]+/)
 
@@ -335,8 +315,6 @@ class TargetData
     # the command need to execute  and the result
     @cmd = nil
     @cmd_out = nil
-    # TODO: Need to add some error handling code here, like failed to start the service.
-    # @target_outout = `targetcli ls`.split("\n") #This is an arrry now, so that we can analyze the lines one by one
     @targets_list = TargetList.new
     self.analyze
   end
@@ -349,9 +327,7 @@ class TargetData
     @target_outout.each do |line|
       #handle iqn targets here.
       if @re_iqn_target.match(line)
-         #puts line
          if @iqn_name = @re_iqn_name.match(line)
-           #puts iqn_name
            @target_name=@iqn_name.to_s
            @targets_list.store_target(@target_name)
            @current_target = @targets_list.fetch_target(@target_name)
@@ -360,9 +336,7 @@ class TargetData
 
       # handle eui targets here.
       if @re_eui_target.match(line)
-         #puts line
          if @eui_name = @re_eui_name.match(line)
-           #puts eui_name
            @target_name=@eui_name.to_s
            @targets_list.store_target(@target_name)
            @current_target = @targets_list.fetch_target(@target_name)
@@ -371,7 +345,6 @@ class TargetData
 
       # handle TPGs here.
       if @tpg_name = @re_tpg.match(line)
-         #puts tpg_name.to_s.strip
          #find the tpg number
          @tpg_num = /\d+/.match(@tpg_name.to_s.strip)
          @current_target.store_tpg(@tpg_num.to_s.strip)
@@ -380,88 +353,61 @@ class TargetData
 
       # handle ACLs group here
       if @re_acls_group.match(line)
-        # puts line
         @current_tpg.store_acls("acls")
         @current_acls_group = @current_tpg.fetch_acls("acls")
       end
 
       # handle acl rules for an IQN initaitor here
       if @re_acl_iqn_rule.match(line)
-        # puts line
-        # handle_acl_rule(match)
         @initiator_name = @re_iqn_name.match(line).to_s
-        # puts initiator_name
         @current_acls_group.store_rule(@initiator_name)
         @current_acl_rule = @current_acls_group.fetch_rule(@initiator_name)
         # get authentication information here.
-        # get userid
         @cmd = "targetcli iscsi/" + @current_target.fetch_target_name() + \
             "/tpg" + @current_tpg.fetch_tpg_number() + "/acls/" + @initiator_name + "/ get auth userid"
         @cmd_out = `#{@cmd}`
         @current_acl_rule.store_userid(@cmd_out[7 , @cmd.length])
-        # puts current_acl_rule.fetch_userid()
-        # get password
         @cmd = "targetcli iscsi/" + @current_target.fetch_target_name() + \
             "/tpg" + @current_tpg.fetch_tpg_number() + "/acls/" + @initiator_name + "/ get auth password"
         @cmd_out = `#{@cmd}`
         @current_acl_rule.store_password(@cmd_out[9 , @cmd.length])
-        # puts current_acl_rule.fetch_password()
-        # get mutual_userid
         @cmd = "targetcli iscsi/" + @current_target.fetch_target_name() + \
             "/tpg" + @current_tpg.fetch_tpg_number() + "/acls/" + @initiator_name + "/ get auth mutual_userid"
         @cmd_out = `#{@cmd}`
         @current_acl_rule.store_mutual_userid(@cmd_out[14 , @cmd.length])
-        # puts current_acl_rule.fetch_mutual_userid()
-        # get mutual_password
         @cmd = "targetcli iscsi/" + @current_target.fetch_target_name() + \
             "/tpg" + @current_tpg.fetch_tpg_number() + "/acls/" + @initiator_name + "/ get auth mutual_password"
         @cmd_out = `#{@cmd}`
         @current_acl_rule.store_mutual_password(@cmd_out[16 , @cmd.length])
-        # puts current_acl_rule.fetch_mutual_password()
       end
       # handle acl rules for an EUI initaitor here
       if @re_acl_eui_rule.match(line)
-        # puts line
-        # handle_acl_rule(match)
         @initiator_name = @re_eui_name.match(line).to_s
-        # puts initiator_name
         @current_acls_group.store_rule(@initiator_name)
         @current_acl_rule = @current_acls_group.fetch_rule(@initiator_name)
-        # get authentication information here.
-        # get userid
         @cmd = "targetcli iscsi/" + @current_target.fetch_target_name() + \
             "/tpg" + @current_tpg.fetch_tpg_number() + "/acls/" + @initiator_name + "/ get auth userid"
         @cmd_out = `#{@cmd}`
         @current_acl_rule.store_userid(@cmd_out[7 , @cmd.length])
-        # puts current_acl_rule.fetch_userid()
-        # get password
         @cmd = "targetcli iscsi/" + @current_target.fetch_target_name() + \
             "/tpg" + @current_tpg.fetch_tpg_number() + "/acls/" + @initiator_name + "/ get auth password"
         @cmd_out = `#{@cmd}`
         @current_acl_rule.store_password(@cmd_out[9 , @cmd.length])
-        # puts current_acl_rule.fetch_password()
-        # get mutual_userid
         @cmd = "targetcli iscsi/" + @current_target.fetch_target_name() + \
             "/tpg" + @current_tpg.fetch_tpg_number() + "/acls/" + @initiator_name + "/ get auth mutual_userid"
         @cmd_out = `#{@cmd}`
         @current_acl_rule.store_mutual_userid(@cmd_out[14 , @cmd.length])
-        # puts current_acl_rule.fetch_mutual_userid()
-        # get mutual_password
         @cmd = "targetcli iscsi/" + @current_target.fetch_target_name() + \
             "/tpg" + @current_tpg.fetch_tpg_number() + "/acls/" + @initiator_name + "/ get auth mutual_password"
         @cmd_out = `#{@cmd}`
         @current_acl_rule.store_mutual_password(@cmd_out[16 , @cmd.length])
-        # puts current_acl_rule.fetch_mutual_password()
       end
 
       # handle mapped luns here
       if @re_mapped_lun_line.match(line)
-        # puts line
         @mapping_lun_name = @re_mapping_lun.match(line).to_s.strip
-        # puts @mapping_lun_name
         @mapped_lun_name = @re_mapped_lun.match(line).to_s.strip
         @mapped_lun_name.slice!("[")
-        # puts @mapped_lun_name
         mapping_lun_num = @mapping_lun_name[10,@mapping_lun_name.length]
         @current_acl_rule.store_mapped_lun(mapping_lun_num)
         mapped_lun_num = @mapped_lun_name[3,@mapped_lun_name.length]
@@ -470,17 +416,10 @@ class TargetData
 
       # handle luns here
       if @re_lun.match(line)
-        #p line
         # lun_num is a string like lun0, lun1,lun2....
         lun_num_tmp = @re_lun_num.match(line).to_s
         lun_num = lun_num_tmp[2,lun_num_tmp.length]
-        # puts lun_num
-        # lun_name_tmp = @re_lun_name.match(line).to_s
-        # lun_name_tmp = line[line.index("["),line.index("(")]
-        # puts lun_name_tmp
-        # lun_name = lun_name_tmp[lun_name_tmp.index("/") + 1,lun_name_tmp.length-2]
         lun_name_tmp = line[line.index("[")+1 .. line.index("(")-2]
-        puts lun_name_tmp
         lun_name = lun_name_tmp[lun_name_tmp.index("/")+1 .. lun_name_tmp.length]
         # lun_num_int is a number like 1,3,57.
         lun_num_int = lun_num[3,lun_num.length]
@@ -494,14 +433,11 @@ class TargetData
   end # end of the function
 
   def print_targets()
-    puts "print_targets() called"
     @targets_list.print_list()
-    # @targets_list.print_target_names()
   end
 
  # this function will return are created target names.
   def get_target_names_array()
-    # puts "get_target_names_array() called."
     names = Array.new
     names = @targets_list.get_target_names()
     return names
@@ -584,7 +520,6 @@ class DiscoveryAuth
     cmd_out = `#{cmd}`
     mutual_password = cmd_out[16,cmd_out.length]
     store_mutual_password(mutual_password)
-    #p @discovery_auth
   end
 end
 
