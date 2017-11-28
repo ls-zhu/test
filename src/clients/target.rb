@@ -20,12 +20,12 @@ Yast.import "UI"
 
 
 module Yast
-  class ExampleDialog
+  class ISCSILioServer
     include Yast::I18n
     include Yast::UIShortcuts
     include Yast::Logger
     def run
-      textdomain "example"
+      textdomain "iscsi-lio-server"
       msg = ""
       global_tab = GlobalTab.new
       targets_tab = TargetsTab.new
@@ -82,4 +82,4 @@ end
 $target_data = TargetData.new
 $global_data = Global.new
 $discovery_auth = DiscoveryAuth.new
-Yast::ExampleDialog.new.run
+Yast::ISCSILioServer.new.run
