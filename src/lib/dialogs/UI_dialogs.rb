@@ -25,7 +25,7 @@ Yast.import 'TablePopup'
 
 class NoDiscoveryAuth_CheckBox < ::CWM::CheckBox
   def initialize(container,value)
-    textdomain 'example'
+    textdomain "iscsi-lio-server"
     @config = value
     @container_class = container
   end
@@ -35,7 +35,7 @@ class NoDiscoveryAuth_CheckBox < ::CWM::CheckBox
   end
 
   def init
-    self.value = @config # TODO: read config
+    self.value = @config
   end
 
   def store
@@ -59,7 +59,7 @@ end
 # used to enable / disable 0.0.0.0 IP portal
 class BindAllIP < ::CWM::CheckBox
   def initialize
-    textdomain 'example'
+    textdomain "iscsi-lio-server"
   end
 
   def label
@@ -77,9 +77,8 @@ end
 
 class UseLoginAuth < ::CWM::CheckBox
   def initialize(val)
-    textdomain 'example'
+    textdomain "iscsi-lio-server"
     @config = val
-    puts "In UseLoginAuth val is:", val
   end
 
   def label
@@ -110,7 +109,7 @@ end
 # Class used to check whether initiator side auth is enabled
 class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
   def initialize(container, value)
-    textdomain 'example'
+    textdomain "iscsi-lio-server"
     @container_class = container
     @config = value
   end
@@ -119,18 +118,13 @@ class Auth_by_Initiators_CheckBox < ::CWM::CheckBox
     _("Authentication by Initiators\n")
   end
 
-  # auto called from Yast
   def init
-    self.value = @config # TODO: read config
+    self.value = @config
     if self.value == false
       @container_class.disable_input_fields()
     else
       @container_class.enable_input_fields()
     end
-  end
-
-  def store
-    puts "IT IS #{value}!!!"
   end
 
   def set_value(val)
@@ -157,7 +151,7 @@ end
 
 class Auth_by_Targets_CheckBox < ::CWM::CheckBox
   def initialize(container, value)
-    textdomain 'example'
+    textdomain "iscsi-lio-server"
     @container_class = container
     @config = value
   end
@@ -166,19 +160,14 @@ class Auth_by_Targets_CheckBox < ::CWM::CheckBox
     _('Autnentication by Targets')
   end
 
-  # auto called from Yast
   def init
-    self.value = @config # TODO: read config
+    self.value = @config
     p "Auth_by_Targets_CheckBox got init value:", @config
     if self.value == false
       @container_class.disable_input_fields()
     else
       @container_class.enable_input_fields()
     end
-  end
-
-  def store
-    puts "IT IS #{value}!!!"
   end
 
   def set_value(val)
@@ -205,6 +194,7 @@ end
 
 class UserName < CWM::InputField
   def initialize(str)
+    textdomain "iscsi-lio-server"
     if str == " \n"
       @config = ""
     else
@@ -260,6 +250,7 @@ end
 
 class Password < CWM::InputField
   def initialize(str)
+    textdomain "iscsi-lio-server"
     if str == " \n"
       @config = ""
     else
@@ -311,6 +302,7 @@ end
 
 class MutualUserName < CWM::InputField
   def initialize(str)
+    textdomain "iscsi-lio-server"
     if str == " \n"
       @config = ""
     else
@@ -362,6 +354,7 @@ end
 
 class MutualPassword < CWM::InputField
   def initialize(str)
+    textdomain "iscsi-lio-server"
     if str == " \n"
       @config = ""
     else
@@ -417,6 +410,7 @@ module Yast
     include Yast::I18n
     include Yast::UIShortcuts
     def initialize
+      textdomain "iscsi-lio-server"
       # Yast.import "SuSEFirewall"
       self.initial = true
       @service = Yast::SystemdService.find('targetcli')
@@ -451,7 +445,7 @@ class TargetAuthDiscovery < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(value)
-    #$discovery_auth.analyze()
+    textdomain "iscsi-lio-server"
     username = $discovery_auth.fetch_userid.gsub(/\s+/,'')
     password = $discovery_auth.fetch_password.gsub(/\s+/,'')
     @auth_by_target = Auth_by_Targets_CheckBox.new(self, value)
@@ -501,8 +495,6 @@ class TargetAuthDiscovery < CWM::CustomWidget
 
   def validate
     status = @auth_by_target.get_value
-    #p "In TargetAuthDiscovery Validate(),", status
-    #puts @user_name_input.get_value, @password_input.get_value
     if status == true
       if (@user_name_input.get_value == " \n") || (@password_input.get_value == " \n")
         err_msg = _("Please use username and password in pair.")
@@ -514,7 +506,6 @@ class TargetAuthDiscovery < CWM::CustomWidget
   end
 
   def store()
-    puts "TargetAuthDiscovery store is called."
     username = @user_name_input.get_value.gsub(/\s+/,'')
     password = @password_input.get_value.gsub(/\s+/,'')
     puts username, password
@@ -537,8 +528,8 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(value)
+    textdomain "iscsi-lio-server"
     @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, value)
-    #$discovery_auth.analyze()
     mutual_username = $discovery_auth.fetch_mutual_userid().gsub(/\s+/,'')
     mutual_password = $discovery_auth.fetch_mutual_password().gsub(/\s+/,'')
     @mutual_user_name_input = MutualUserName.new(mutual_username)
@@ -586,8 +577,6 @@ class InitiatorAuthDiscovery < CWM::CustomWidget
 
   def validate
     status = @auth_by_initiator.get_value
-    #p "In InitiatorAuthDiscovery Validate(),", status
-    #puts @mutual_user_name_input.get_value, @mutual_password_input.get_value
     if status == true
       if (@mutual_user_name_input.get_value == " \n") || (@mutual_password_input.get_value == " \n")
         err_msg = _("Please use mutual_username and mutual_password in pair.")
@@ -622,6 +611,7 @@ class DiscoveryAuthWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize()
+    textdomain "iscsi-lio-server"
     $discovery_auth.analyze()
     @status = $discovery_auth.fetch_status()
     if @status == "False \n"
@@ -642,7 +632,6 @@ class DiscoveryAuthWidget < CWM::CustomWidget
   end
 
   def disable_discovery_auth_widgets
-    puts "disable_discovery_auth_widgets() called."
     @target_discovery_auth.disable_checkbox()
     @target_discovery_auth.disable_input_fields()
     @initiator_discovery_auth.disable_checkbox()
@@ -669,8 +658,6 @@ class DiscoveryAuthWidget < CWM::CustomWidget
   end
 
   def validate
-    #puts "In DiscoveryAuthWidget validate(), we got:", @no_discovery_auth_checkbox.value, \
-     # @target_discovery_auth.get_status, @initiator_discovery_auth.get_status
     if @no_discovery_auth_checkbox.value == true
       if (@target_discovery_auth.get_status == false) || (@initiator_discovery_auth.get_status ==false)
         err_msg = _("When Discovery Authentication is enabled.")
@@ -678,18 +665,11 @@ class DiscoveryAuthWidget < CWM::CustomWidget
         Yast::Popup.Error(err_msg)
         return false
       end
-      #TODO: Add code to check whether users provide the same username and password for incomfing and outgoing auth,
-      #that will not work
     end
     true
   end
 
-  def store()
-    #p "In DiscoveryAuthWidget store, we got:"
-  end
-
   def handle(event)
-    #puts "DiscoveryAuthWidget store() called."
     nil
   end
 
@@ -700,6 +680,7 @@ end
 
 class GlobalTab < ::CWM::Tab
   def initialize
+    textdomain "iscsi-lio-server"
     @discovery_auth = DiscoveryAuthWidget.new()
     self.initial = true
   end
@@ -719,8 +700,8 @@ end
 
 class TargetsTab < ::CWM::Tab
   def initialize
+    textdomain "iscsi-lio-server"
     @target_table_widget = TargetsTableWidget.new
-    # puts "Initialized a TargetsTab class."
     self.initial = false
   end
 
@@ -739,6 +720,7 @@ end
 
 class TargetNameInput < CWM::InputField
   def initialize(str)
+    textdomain "iscsi-lio-server"
     @config = str.downcase
     @iscsi_name_length_max = 233
   end
@@ -800,6 +782,7 @@ end
 
 class PortalGroupInput < CWM::IntField
   def initialize(num)
+    textdomain "iscsi-lio-server"
     @config = num.to_i
   end
 
@@ -822,6 +805,7 @@ end
 
 class TargetPortNumberInput < CWM::IntField
   def initialize(int)
+    textdomain "iscsi-lio-server"
     @config = int
   end
 
@@ -910,6 +894,7 @@ end
 
 class ACLTable < CWM::Table
   def initialize(target_name,tpg)
+    textdomain "iscsi-lio-server"
     @target_name = target_name
     @tpg_num = tpg
     @acls = generate_items()
@@ -939,7 +924,6 @@ class ACLTable < CWM::Table
     auth_str = ""
     all_acls_hash = get_all_acls_hash()
     all_acls_hash.each do |key,value|
-      #p value
       lun_mappig_str = get_lun_mapping_str(value)
       auth_str = get_auth_str(value)
       if auth_str.empty? == true
@@ -993,14 +977,6 @@ class ACLTable < CWM::Table
     self.change_items(@acls)
   end
 
-  def modify_item
-
-  end
-
-  def remove_item
-
-  end
-
   def header
     [_('Initiator'), _('LUN Mapping'), _('Auth')]
   end
@@ -1016,6 +992,7 @@ end
 
 class InitiatorNameInput < CWM::InputField
   def initialize(str)
+    textdomain "iscsi-lio-server"
     @config = str
   end
 
@@ -1053,7 +1030,7 @@ end
 
 class ImportLUNsCheckbox < ::CWM::CheckBox
   def initialize
-    textdomain 'example'
+    textdomain "iscsi-lio-server"
   end
 
   def label
@@ -1061,7 +1038,7 @@ class ImportLUNsCheckbox < ::CWM::CheckBox
   end
 
   def init
-    self.value = true # TODO: read config
+    self.value = true
   end
 
 
@@ -1072,6 +1049,7 @@ end
 
 class AddAclDialog < CWM::Dialog
   def initialize
+    textdomain "iscsi-lio-server"
     @initiator_name_input = InitiatorNameInput.new("")
     @import_luns = ImportLUNsCheckbox.new()
   end
@@ -1118,6 +1096,7 @@ end
 
 class LUNMappingTable < CWM::Table
   def initialize(initiator_name, target_name)
+    textdomain "iscsi-lio-server"
     @initiator_name = initiator_name
     @target_name = target_name
     @tpg_num = nil
@@ -1214,6 +1193,7 @@ end
 # This class used to input initiator side lun number, used in adding a lun mapping pare
 class InitiatorLUNNumInput < CWM::IntField
   def initialize(int)
+    textdomain "iscsi-lio-server"
     @config = int
   end
 
@@ -1241,6 +1221,7 @@ end
 # This class used to input target side lun number, used in adding a lun mapping pare
 class TargetLUNNumInput < CWM::IntField
   def initialize(int)
+    textdomain "iscsi-lio-server"
     @config = int
   end
 
@@ -1333,6 +1314,7 @@ class EditLUNMappingWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(initiator_name, target_name)
+    textdomain "iscsi-lio-server"
     self.handle_all_events = true
     @lun_mapping_table = LUNMappingTable.new(initiator_name, target_name)
     @add_lun_mapping_dialog = AddLUNMappingDialog.new()
@@ -1382,6 +1364,7 @@ end
 
 class EditLUNMappingDialog < CWM::Dialog
   def initialize(initiator_name, target_name)
+    textdomain "iscsi-lio-server"
     @lun_mapping_widget = EditLUNMappingWidget.new(initiator_name, target_name)
   end
 
@@ -1394,7 +1377,7 @@ class EditLUNMappingDialog < CWM::Dialog
   end
 
   def title
-    'Edit LUN mapping'
+    _('Edit LUN mapping')
   end
 
   def contents
@@ -1416,7 +1399,6 @@ class EditLUNMappingDialog < CWM::Dialog
 
   def run
     super
-    #return @initiator_name_input.get_value()
   end
 end
 
@@ -1426,13 +1408,12 @@ class ACLInitiatorAuth < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(acl_hash, info)
+    textdomain "iscsi-lio-server"
     @info = info
     mutual_username = acl_hash.fetch_mutual_userid.gsub(/\s+/,'')
     mutual_password = acl_hash.fetch_mutual_password.gsub(/\s+/,'')
     @mutual_user_name_input = MutualUserName.new(mutual_username)
     @mutual_password_input = MutualPassword.new(mutual_password)
-    p "In ACLInitiatorAuth initialize():  "
-    p mutual_username, mutual_password
     if (mutual_password.empty? != true) && (mutual_username.empty? != true)
       @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, true)
       enable_input_fields
@@ -1477,14 +1458,12 @@ class ACLInitiatorAuth < CWM::CustomWidget
   end
 
   def validate()
-    puts "ACLInitiatorAuth validate is called."
     mutual_username = @mutual_user_name_input.get_value.gsub(/\s+/,'')
     mutual_password = @mutual_password_input.get_value.gsub(/\s+/,'')
     puts mutual_username, mutual_password
     target_name = @info[0]
     tpg_num = @info[1]
     initiator_name = @info[2]
-    p target_name, tpg_num, initiator_name
     cmd = "targetcli"
     if @auth_by_initiator.value == true
       p1 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
@@ -1540,6 +1519,7 @@ class ACLTargetAuth < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(acl_hash, info)
+    textdomain "iscsi-lio-server"
     @info = info
     username = acl_hash.fetch_userid.gsub(/\s+/,'')
     password = acl_hash.fetch_password.gsub(/\s+/,'')
@@ -1589,19 +1569,16 @@ class ACLTargetAuth < CWM::CustomWidget
 
 
   def validate()
-    puts "ACLTargetAuth validate is called."
     username = @user_name_input.get_value.gsub(/\s+/,'')
     password = @password_input.get_value.gsub(/\s+/,'')
     puts username, password
     target_name = @info[0]
     tpg_num = @info[1]
     initiator_name = @info[2]
-    p target_name, tpg_num, initiator_name
     cmd = "targetcli"
     if @auth_by_target.value == true
       p1 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
          "/ set auth userid=" + username + " password=" + password
-      #p p1
       begin
         Cheetah.run(cmd, p1)
       rescue Cheetah::ExecutionFailed => e
@@ -1617,8 +1594,6 @@ class ACLTargetAuth < CWM::CustomWidget
          "/ set auth userid="
       p2 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
          "/ set auth password="
-      p p1
-      p p2
       begin
         Cheetah.run(cmd, p1)
       rescue Cheetah::ExecutionFailed => e
@@ -1656,6 +1631,7 @@ class EditAuthWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(initiator_name, target_name, tpg)
+    textdomain "iscsi-lio-server"
     $target_data.analyze()
     all_acls_hash = Hash.new()
     target_list = $target_data.get_target_list
@@ -1751,6 +1727,7 @@ end
 #Class to handle initiator acls, will shown after creating or editing targets.
 class InitiatorACLs < CWM::CustomWidget
   def initialize(target_name, tpg_num)
+    textdomain "iscsi-lio-server"
     self.handle_all_events = false
     @target_tpg = tpg_num
     @target_name = target_name
@@ -1823,7 +1800,7 @@ class InitiatorACLs < CWM::CustomWidget
   end
 
   def help
-    "demo help in InitaitorACLs"
+    _("demo help in InitaitorACLs")
   end
 end
 
@@ -1835,6 +1812,7 @@ class AddTargetWidget < CWM::CustomWidget
   include Yast::Logger
 
   def initialize(target_name)
+    textdomain "iscsi-lio-server"
     self.handle_all_events = true
     @iscsi_name_length_max = 223
     @back_storage = nil
@@ -1862,7 +1840,6 @@ class AddTargetWidget < CWM::CustomWidget
       tpg = target.get_default_tpg
       if tpg == nil
         tpg_num = rand(10)
-        puts tpg_num
         cmd = 'targetcli'
         p1 = 'iscsi/' + target_name + '/ create tag=' + tpg_num.to_s
         begin
@@ -1899,7 +1876,6 @@ class AddTargetWidget < CWM::CustomWidget
       cmd = "targetcli iscsi/" + @target_name + "/tpg" + @tpg_num + "/ get attribute authentication"
       cmd_out = `#{cmd}`
       ret = cmd_out[15, cmd_out.length]
-      p "ret is : ", ret
       if ret == "1 \n"
         @use_login_auth = UseLoginAuth.new(true)
       else
@@ -1993,17 +1969,14 @@ class AddTargetWidget < CWM::CustomWidget
     end
     @target_info.push(@target_name)
     @target_info.push(target_tpg)
-    puts "Use_login_Auth value is:", @use_login_auth.value
     auth = @use_login_auth.value
     cmd = "targetcli"
     if auth == true
       p1 = "iscsi/" + @target_name + "/tpg" + @tpg_num + "/ set attribute authentication=1 " + \
            " demo_mode_write_protect=1" + " cache_dynamic_acls=0" + " generate_node_acls=0"
-      p p1
     else
       p1 = "iscsi/" + @target_name + "/tpg" + @tpg_num + "/ set attribute authentication=0 " + \
            " demo_mode_write_protect=0" + " cache_dynamic_acls=1" + " generate_node_acls=1"
-      p p1
     end
     begin
       Cheetah.run(cmd, p1)
@@ -2027,6 +2000,7 @@ end
 
 class TargetTable < CWM::Table
   def initialize
+    textdomain "iscsi-lio-server"
     @targets = generate_items()
     @targets_names = $target_data.get_target_names_array
   end
@@ -2074,6 +2048,7 @@ class TargetsTableWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize
+    textdomain "iscsi-lio-server"
     self.handle_all_events = true
     @target_table = TargetTable.new
     @add_target_page = nil
@@ -2158,6 +2133,7 @@ end
 
 class LUNTable < CWM::Table
   def initialize(init_luns)
+    textdomain "iscsi-lio-server"
     # @luns will store all luns exsisted and will be created
     @luns = init_luns
     # @luns_add will store the luns will be created, will not store any exsisted luns.
@@ -2297,6 +2273,7 @@ end
 
 class LunNumInput < CWM::IntField
   def initialize(num)
+    textdomain "iscsi-lio-server"
     @config = num
   end
 
@@ -2361,6 +2338,7 @@ end
 
 class LunNameInput < CWM::InputField
   def initialize(str)
+    textdomain "iscsi-lio-server"
     @config = str
   end
 
@@ -2392,6 +2370,7 @@ class LUNPathEdit < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize
+    textdomain "iscsi-lio-server"
     self.handle_all_events = true
     @path = nil
     @lun_path_input = LUNPathInput.new("")
@@ -2456,12 +2435,15 @@ class LUNPathEdit < CWM::CustomWidget
     nil
   end
 
-  def help; end
+  def help
+    _("Demo help")
+  end
 end
 
 # This is a class to config LUN path, number and name, used in LUNDetailsWidget contents
 class LUNConfig < CWM::CustomWidget
   def initialize
+    textdomain "iscsi-lio-server"
     @lun_num_input = LunNumInput.new(nil)
     @lun_path_edit = LUNPathEdit.new
     @lun_name_input = LunNameInput.new(nil)
@@ -2494,11 +2476,14 @@ class LUNConfig < CWM::CustomWidget
     @lun_info
   end
 
-  def help; end
+  def help
+    _("Demo help")
+  end
 end
 
 class LUNDetailsWidget < CWM::Dialog
   def initialize
+    textdomain "iscsi-lio-server"
     @lun_config = LUNConfig.new
   end
 
@@ -2547,6 +2532,7 @@ class LUNsTableWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(luns, target_name, tpg_num)
+    textdomain "iscsi-lio-server"
     self.handle_all_events = true
     @lun_table = LUNTable.new(luns)
     @lun_details = LUNDetailsWidget.new
@@ -2601,7 +2587,6 @@ class LUNsTableWidget < CWM::CustomWidget
           puts ret
         end
       when :delete
-        puts "In LUN deleting:"
         lun = @lun_table.get_selected
         cmd = "targetcli"
         p1 = "backstores/"
@@ -2612,8 +2597,6 @@ class LUNsTableWidget < CWM::CustomWidget
           p1 += "block delete " + lun[2]
         end
         p2 = "iscsi/" + @target_name + "/tpg" + @tpg_num + "/luns/ delete lun=" + lun[1]
-        p p1
-        p p2
         ret = nil
         if $global_data.del_lun_warning_enable? == true
           msg = _("This will immediately delete LUNs. ") + \
