@@ -249,7 +249,6 @@ class TargetList
       target_names_array.push(key)
       #p key
     end
-    p "in get_target_names, target_names_array are:", target_names_array
     return target_names_array
   end
 

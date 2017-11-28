@@ -34,18 +34,15 @@ class NoDiscoveryAuth_CheckBox < ::CWM::CheckBox
     _('No Discovery Authentication')
   end
 
-  # auto called from Yast
   def init
     self.value = @config # TODO: read config
   end
 
   def store
-    puts "IT IS #{value}!!!"
     $discovery_auth.store_status(self.value)
   end
 
   def handle
-    puts 'Changed!'
     if self.value == false
       @container_class.disable_discovery_auth_widgets()
     else
@@ -69,17 +66,8 @@ class BindAllIP < ::CWM::CheckBox
     _('Bind all IP addresses')
   end
 
-  # auto called from Yast
   def init
-    self.value = true # TODO: read config
-  end
-
-  def store
-    puts "IT IS #{value}!!!"
-  end
-
-  def handle
-    puts 'Changed!'
+    self.value = true
   end
 
   def opt
@@ -88,25 +76,30 @@ class BindAllIP < ::CWM::CheckBox
 end
 
 class UseLoginAuth < ::CWM::CheckBox
-  def initialize
+  def initialize(val)
     textdomain 'example'
+    @config = val
+    puts "In UseLoginAuth val is:", val
   end
 
   def label
     _('Use Login Authentication')
   end
 
-  # auto called from Yast
   def init
-    self.value = true # TODO: read config
+    self.value = @config
   end
 
   def store
-    puts "IT IS #{value}!!!"
+    @config = self.value
   end
 
-  def handle
-    puts 'Changed!'
+  def get_value
+    return self.value
+  end
+
+  def set_value(val)
+    self.value = val
   end
 
   def opt
@@ -225,12 +218,10 @@ class UserName < CWM::InputField
 
   def init
     self.value = @config
-    printf("Username InputField init, got default value %s.\n", @config)
   end
 
   def store
     @config = value
-    printf("Username Inputfield will store the value %s.\n", @config)
   end
 
   def get_value()
@@ -282,12 +273,10 @@ class Password < CWM::InputField
 
   def init
     self.value = @config
-    printf("Password InputField init, got default value %s.\n", @config)
   end
 
   def store
     @config = value
-    printf("Password Inputfield will store the value %s.\n", @config)
   end
 
   def get_value()
@@ -335,12 +324,10 @@ class MutualUserName < CWM::InputField
 
   def init
     self.value = @config
-    printf("Mutual Username InputField init, got default value %s.\n", @config)
   end
 
   def store
     @config = value
-    printf("Mutual Username Inputfield will store the value %s.\n", @config)
   end
 
   def get_value()
@@ -388,12 +375,10 @@ class MutualPassword < CWM::InputField
 
   def init
     self.value = @config
-    printf("Mutual Password InputField init, got default value %s.\n", @config)
   end
 
   def store
     @config = value
-    printf("Mutual Password Inputfield will store the value %s.\n", @config)
   end
 
   def get_value()
@@ -754,7 +739,6 @@ end
 
 class TargetNameInput < CWM::InputField
   def initialize(str)
-    printf("TargetName got default value %s.\n", str)
     @config = str.downcase
     @iscsi_name_length_max = 233
   end
@@ -764,7 +748,6 @@ class TargetNameInput < CWM::InputField
   end
 
   def validate
-    puts 'Validate in TargetNameInput is called.'
     if value.empty?
       Yast::Popup.Error(_('Target name cannot be empty.'))
       return false
@@ -799,18 +782,15 @@ class TargetIdentifierInput < CWM::InputField
 
   def validate
     self.value = @config.downcase
-    # printf("In TargetIndentifierInput Validate, self.value is %s.\n", value)
     true
   end
 
   def init
     self.value = @config.downcase
-    # printf("Target Identifier InputField init, got default value %s.\n",@config)
   end
 
   def store
     @config = value.downcase
-    # printf("Target Identifier Inputfield will store the value %s.\n", @config)
   end
 
   def get_value
@@ -821,8 +801,6 @@ end
 class PortalGroupInput < CWM::IntField
   def initialize(num)
     @config = num.to_i
-    # p num.class
-    # printf("@config is %d.\n", @config)
   end
 
   def label
@@ -831,12 +809,10 @@ class PortalGroupInput < CWM::IntField
 
   def init
     self.value = @config
-    # printf("Target Portal Group InputField init, got default value %s.\n",@config)
   end
 
   def store
     @config = value
-    # printf("Target Portal Group will store the value %s.\n", @config)
   end
 
   def minimum
@@ -855,12 +831,10 @@ class TargetPortNumberInput < CWM::IntField
 
   def init
     self.value = @config
-    # printf("Target port number InputField init, got default value %s.\n",@config)
   end
 
   def store
     @config = value
-    # printf("Target port number will store the value %s.\n", @config)
   end
 
   def minimum
@@ -871,7 +845,6 @@ end
 class IpSelectionComboBox < CWM::ComboBox
   def initialize
     @addrs = nil
-    # @config = myconfig
   end
 
   def label
@@ -879,13 +852,6 @@ class IpSelectionComboBox < CWM::ComboBox
   end
 
   def init
-    # self.value = @config.value
-  end
-
-  def store
-    # @config.value = value
-    # puts self.value
-    # puts get_addr
   end
 
   def GetNetConfig
@@ -904,17 +870,14 @@ class IpSelectionComboBox < CWM::ComboBox
           elsif ip_str.start_with?('fe80:')
             next
           else
-            # p ip_str
             ip_list.push(ip_str)
           end
         else
           # delete "/", and drop 127.x.x.x locall address
           ip_str = re_ipv4.match(line).to_s.delete!('/')
-          # p ip_str
           if ip_str.start_with?('127.')
             next
           else
-            # p ip_str
             ip_list.push(ip_str)
           end
         end
@@ -924,7 +887,6 @@ class IpSelectionComboBox < CWM::ComboBox
   end
 
   def addresses
-    # ["first", "second", "third","forth"]
     @addrs = self.GetNetConfig
     @addrs
   end
@@ -938,7 +900,6 @@ class IpSelectionComboBox < CWM::ComboBox
   end
 
   def get_addr
-    # return addresses[self.value[0]]
     value
   end
 
@@ -952,7 +913,6 @@ class ACLTable < CWM::Table
     @target_name = target_name
     @tpg_num = tpg
     @acls = generate_items()
-   # @all_acls_hash = get_all_acls_hash()
   end
 
   def get_all_acls_hash
@@ -1021,11 +981,7 @@ class ACLTable < CWM::Table
 
 
   def get_selected()
-    #puts "get_selected() called."
-    #puts "@acls are:", @acls
-    #p "self.value is:", self.value
     @acls.each do |item|
-      #p "item is:", item
       if item[0] == self.value
         return item
       end
@@ -1104,18 +1060,10 @@ class ImportLUNsCheckbox < ::CWM::CheckBox
     _('Import LUNs from TPG')
   end
 
-  # auto called from Yast
   def init
     self.value = true # TODO: read config
   end
 
-  def store
-    puts "IT IS #{value}!!!"
-  end
-
-  def handle
-    puts 'Changed!'
-  end
 
   def opt
     [:notify]
@@ -1128,10 +1076,6 @@ class AddAclDialog < CWM::Dialog
     @import_luns = ImportLUNsCheckbox.new()
   end
 
-  def init
-
-  end
-
   def wizard_create_dialog
     Yast::UI.OpenDialog(layout)
     yield
@@ -1140,7 +1084,7 @@ class AddAclDialog < CWM::Dialog
   end
 
   def title
-    'Add an initiator'
+    _("Add an initiator")
   end
 
   def contents
@@ -1177,7 +1121,6 @@ class LUNMappingTable < CWM::Table
     @initiator_name = initiator_name
     @target_name = target_name
     @tpg_num = nil
-    #p "In LUNMappingTable, we got:", @initiator_name, @target_name
     @mapping_luns = Array.new()
     @mapping_luns = generate_items()
     @mapping_luns_added = Array.new()
@@ -1188,14 +1131,10 @@ class LUNMappingTable < CWM::Table
     mapped_lun = nil
     $target_data.analyze()
     all_acls_hash = Hash.new()
-    #p "In generate_items, we got:", @target_name, @initiator_name
     target_list = $target_data.get_target_list
-    #p target_list
     target = target_list.fetch_target(@target_name)
-    #p target
     tpg = target.get_default_tpg()
     @tpg_num = tpg.fetch_tpg_number()
-    # we only has one acl group called "acls"
     if tpg != nil
       acls_group_hash = tpg.fetch_acls("acls")
     else
@@ -1334,7 +1273,7 @@ class AddLUNMappingDialog < CWM::Dialog
   end
 
   def title
-    'Add a LUN mapping pair'
+    _('Add a LUN mapping pair')
   end
 
   def wizard_create_dialog
@@ -1420,20 +1359,14 @@ class EditLUNMappingWidget < CWM::CustomWidget
   end
 
   def handle(event)
-    # puts event
     case event['ID']
       when :add
-        # puts "Clicked Add!"
         mapping_lun_pair = @add_lun_mapping_dialog.run()
-        #p mapping_lun_pair
         initiator_lun_num = mapping_lun_pair[0]
         target_lun_num = mapping_lun_pair[1]
         if (initiator_lun_num < 0) || (target_lun_num < 0)
-          # puts "<0"
           return nil
         else
-          # puts ">0"
-          #p initiator_lun_num, target_lun_num
           @lun_mapping_table.add_item(initiator_lun_num, target_lun_num)
         end
     end
@@ -1449,9 +1382,7 @@ end
 
 class EditLUNMappingDialog < CWM::Dialog
   def initialize(initiator_name, target_name)
-    # p "In EditLUNMappingDialog, we got:", initiator_name, target_name
     @lun_mapping_widget = EditLUNMappingWidget.new(initiator_name, target_name)
-    #@lun_mapping_table = LUNMappingTable.new(initiator_name, target_name)
   end
 
 
@@ -1502,14 +1433,11 @@ class ACLInitiatorAuth < CWM::CustomWidget
     @mutual_password_input = MutualPassword.new(mutual_password)
     p "In ACLInitiatorAuth initialize():  "
     p mutual_username, mutual_password
-    #if (@mutual_password != " \n") && (@mutual_username != " \n")
     if (mutual_password.empty? != true) && (mutual_username.empty? != true)
       @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, true)
       enable_input_fields
-      #@status = true
     else
       @auth_by_initiator = Auth_by_Initiators_CheckBox.new(self, false)
-      #@status = false
     end
     self.handle_all_events = true
   end
@@ -1561,7 +1489,6 @@ class ACLInitiatorAuth < CWM::CustomWidget
     if @auth_by_initiator.value == true
       p1 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
          "/ set auth mutual_userid=" + mutual_username + " mutual_password=" + mutual_password
-      #p p1
       begin
         Cheetah.run(cmd, p1)
       rescue Cheetah::ExecutionFailed => e
@@ -1577,8 +1504,6 @@ class ACLInitiatorAuth < CWM::CustomWidget
          "/ set auth mutual_userid="
       p2 = "iscsi/" +  target_name + "/tpg" + tpg_num + "/acls/" + initiator_name + \
          "/ set auth mutual_password="
-      p p1
-      p p2
       begin
         Cheetah.run(cmd, p1)
       rescue Cheetah::ExecutionFailed => e
@@ -1620,14 +1545,10 @@ class ACLTargetAuth < CWM::CustomWidget
     password = acl_hash.fetch_password.gsub(/\s+/,'')
     @user_name_input = UserName.new(username)
     @password_input = Password.new(password)
-    #if (@password != " \n") && (@username != " \n")
     if (password.empty? != true) && (username.empty? != true)
       @auth_by_target = Auth_by_Targets_CheckBox.new(self, true)
-      #enable_input_fields
-      #@status == true
     else
       @auth_by_target = Auth_by_Targets_CheckBox.new(self, false)
-      #@status == false
     end
     self.handle_all_events = true
   end
@@ -1735,7 +1656,6 @@ class EditAuthWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize(initiator_name, target_name, tpg)
-    p "In EditAuthWidget, we got:", initiator_name, target_name, tpg
     $target_data.analyze()
     all_acls_hash = Hash.new()
     target_list = $target_data.get_target_list
@@ -1795,10 +1715,6 @@ class EditAuthDialog < CWM::Dialog
     @edit_auth_widget = EditAuthWidget.new(initiator_name, target_name, tpg)
   end
 
-  def init
-
-  end
-
   def wizard_create_dialog
     Yast::UI.OpenDialog(layout)
     yield
@@ -1829,7 +1745,6 @@ class EditAuthDialog < CWM::Dialog
 
   def run
     super
-    #return @initiator_name_input.get_value()
   end
 end
 
@@ -1843,8 +1758,6 @@ class InitiatorACLs < CWM::CustomWidget
     @target_portal_input = PortalGroupInput.new(@target_tpg)
     @acls_table = ACLTable.new(target_name,tpg_num.to_i)
     @add_acl_dialog = AddAclDialog.new()
-    #@edit_lun_mapping_dialog = EditLUNMappingDialog.new(nil)
-    #@all_acls_hash = nil
   end
 
   def init
@@ -1868,7 +1781,6 @@ class InitiatorACLs < CWM::CustomWidget
             PushButton(Id(:edit_lun), _('Edit LUN')),
             PushButton(Id(:edit_auth), _('Edit Auth')),
             PushButton(Id(:delete), _('Delete')),
-            #PushButton(Id(:copy), _('Copy')),
         )
     )
   end
@@ -1922,14 +1834,12 @@ class AddTargetWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
 
-  # Fill nil when add a target or fill the name of the target to be edited
   def initialize(target_name)
-    #puts "AddTargetWidget initialize() called."
     self.handle_all_events = true
-    #self.handle_all_events = false
     @iscsi_name_length_max = 223
     @back_storage = nil
     @target_name = nil
+    @tpg_num = nil
     # @target_info used to return target name, portal number, etc to the caller, in order to create ACLs
     @target_info = Array.new
     # luns contains the luns would be shown in the lun table
@@ -1942,23 +1852,15 @@ class AddTargetWidget < CWM::CustomWidget
       @mode = 'new'
       @target_name_input_field = TargetNameInput.new('iqn.' + date_str + '.com.example')
       @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
-      # @target_identifier_input_field = TargetIdentifierInput.new("123")
       @target_portal_group_field = PortalGroupInput.new(1)
       @target_port_num_field = TargetPortNumberInput.new(3260)
     else
       @mode = 'edit'
-      printf("Editing target %s.\n", target_name)
       tpg_num = 0
       target_list = $target_data.get_target_list
       target = target_list.fetch_target(target_name)
-      # tpg = target.fetch_tpg()
       tpg = target.get_default_tpg
-      #puts 'tpg is:'
-      #p tpg
-      # we add a default target portal group = 1 if no tpgs exist.
       if tpg == nil
-        #puts 'in if, tpg is'
-        #p tpg
         tpg_num = rand(10)
         puts tpg_num
         cmd = 'targetcli'
@@ -1970,20 +1872,17 @@ class AddTargetWidget < CWM::CustomWidget
         end
         $target_data.analyze
         target = target_list.fetch_target(target_name)
+        tpg = target.get_default_tpg
       end
 
       if tpg != nil
-        #puts 'in else,tpg is:'
-        #p tpg
         target = target_list.fetch_target(target_name)
         tpg_num = target.get_default_tpg.fetch_tpg_number
+        @tpg_num = tpg_num
       end
-
-      printf("tpg_num is %d.\n", tpg_num)
       luns = target.get_default_tpg.get_luns_array
-      # p luns
       @target_name_input_field = TargetNameInput.new(target_name)
-      # just use a empty string here to adapt the string parameter requirement
+      @target_name = target_name
       @target_identifier_input_field = TargetIdentifierInput.new('')
       @target_portal_group_field = PortalGroupInput.new(tpg_num)
       @target_port_num_field = TargetPortNumberInput.new(3260)
@@ -1991,8 +1890,22 @@ class AddTargetWidget < CWM::CustomWidget
 
     @IP_selsection_box = IpSelectionComboBox.new
     @target_bind_all_ip_checkbox = BindAllIP.new
-    @use_login_auth = UseLoginAuth.new
     @lun_table_widget = LUNsTableWidget.new(luns, target_name, tpg_num)
+    if @mode == 'new'
+      @use_login_auth = UseLoginAuth.new(false)
+    end
+
+    if @mode == 'edit'
+      cmd = "targetcli iscsi/" + @target_name + "/tpg" + @tpg_num + "/ get attribute authentication"
+      cmd_out = `#{cmd}`
+      ret = cmd_out[15, cmd_out.length]
+      p "ret is : ", ret
+      if ret == "1 \n"
+        @use_login_auth = UseLoginAuth.new(true)
+      else
+        @use_login_auth = UseLoginAuth.new(false)
+      end
+    end
   end
 
   def opt
@@ -2019,7 +1932,6 @@ class AddTargetWidget < CWM::CustomWidget
   end
 
   def validate
-    puts "Validate in AddTargetWidget is called."
     if @mode == 'new'
       cmd = 'targetcli'
       p1 = 'iscsi/ create'
@@ -2081,6 +1993,27 @@ class AddTargetWidget < CWM::CustomWidget
     end
     @target_info.push(@target_name)
     @target_info.push(target_tpg)
+    puts "Use_login_Auth value is:", @use_login_auth.value
+    auth = @use_login_auth.value
+    cmd = "targetcli"
+    if auth == true
+      p1 = "iscsi/" + @target_name + "/tpg" + @tpg_num + "/ set attribute authentication=1 " + \
+           " demo_mode_write_protect=1" + " cache_dynamic_acls=0" + " generate_node_acls=0"
+      p p1
+    else
+      p1 = "iscsi/" + @target_name + "/tpg" + @tpg_num + "/ set attribute authentication=0 " + \
+           " demo_mode_write_protect=0" + " cache_dynamic_acls=1" + " generate_node_acls=1"
+      p p1
+    end
+    begin
+      Cheetah.run(cmd, p1)
+    rescue Cheetah::ExecutionFailed => e
+      if e.stderr != nil
+        err_msg = _("Failed to change authentication settings. ")
+        err_msg += e.stderr
+        Yast::Popup.Error(err_msg)
+      end
+    end
     true
   end
 
@@ -2090,27 +2023,12 @@ class AddTargetWidget < CWM::CustomWidget
     return info
   end
 
-  def handle(event)
-    puts "Handle() in AddTargetWidget is called."
-    # puts event
-    case event['ID']
-      when :next
-        puts "In next"
-        return "test1111"
-    end
-    puts "here"
-    nil
-  end
 end
 
 class TargetTable < CWM::Table
   def initialize
     @targets = generate_items()
     @targets_names = $target_data.get_target_names_array
-  end
-
-  def init
-    # puts 'init() is called.'
   end
 
   def generate_items
@@ -2130,13 +2048,10 @@ class TargetTable < CWM::Table
   end
 
   def items
-    #generate_items()
     @targets
   end
 
   def get_selected
-    p @targets
-    p self.value
     @targets.each do |target|
       p target
       if target[0] == self.value
@@ -2149,7 +2064,6 @@ class TargetTable < CWM::Table
   def update_table
     $target_data.analyze
     @targets_names = $target_data.get_target_names_array
-    p "In update_table, @targets_names are:", @targets_names
     change_items(generate_items)
   end
 end
@@ -2160,8 +2074,6 @@ class TargetsTableWidget < CWM::CustomWidget
   include Yast::UIShortcuts
   include Yast::Logger
   def initialize
-    # puts "Initialized a TargetsTableWidget class"
-    # p caller
     self.handle_all_events = true
     @target_table = TargetTable.new
     @add_target_page = nil
@@ -2197,26 +2109,18 @@ class TargetsTableWidget < CWM::CustomWidget
   end
 
   def handle(event)
-    # puts event
-    # we put @target_table.update_table() in every case than outside the "case event", because handle would be called
-    # in it's container, that will cause an unexpected update table.
     case event['ID']
       when :add
         @add_target_page = AddTargetWidget.new(nil)
         contents = VBox(@add_target_page, HStretch(), VStretch())
         Yast::Wizard.CreateDialog
         ret = CWM.show(contents, caption: _('Add iSCSI Target'))
-        puts "in :add, the ret is :"
-        puts ret
         Yast::Wizard.CloseDialog
         @target_table.update_table
         info = @add_target_page.get_target_info()
         create_ACLs_dialog(info)
       when :edit
-        puts 'Clicked Edit button!'
         target = @target_table.get_selected
-        puts "in :edit, target is:"
-        p target
         if target != nil
           @edit_target_page = AddTargetWidget.new(target[1])
           contents = VBox(@edit_target_page, HStretch(), VStretch())
@@ -2229,11 +2133,8 @@ class TargetsTableWidget < CWM::CustomWidget
         create_ACLs_dialog(info)
       when :delete
         target = @target_table.get_selected
-        puts "in :delete, target is:"
-        p target
         cmd = 'targetcli'
         p1 = 'iscsi/ delete ' + target[1]
-        puts "P1 is : ", p1
         begin
           Cheetah.run(cmd, p1)
         rescue Cheetah::ExecutionFailed => e
@@ -2244,10 +2145,7 @@ class TargetsTableWidget < CWM::CustomWidget
           end
           Yast::Popup.Error(err_msg)
         end
-        #p `targetcli iscsi/ ls`.split("\n")
         $target_data.analyze()
-        #$target_data = TargetData.new
-        #$target_data.print_targets
         @target_table.update_table
     end
     nil
@@ -2260,8 +2158,6 @@ end
 
 class LUNTable < CWM::Table
   def initialize(init_luns)
-    # puts "initialize a LUNTable"
-    # p caller
     # @luns will store all luns exsisted and will be created
     @luns = init_luns
     # @luns_add will store the luns will be created, will not store any exsisted luns.
@@ -2275,13 +2171,9 @@ class LUNTable < CWM::Table
   def set_target_info(name, tpg)
     @target_name = name
     @target_tpg = tpg
-    # puts 'in set_target_name'
-    # p @target_name
-    # p @target_tpg
   end
 
   def generate_items
-    # p "generate_items is called."
     items_array = []
     if !@luns.nil?
       return @luns
@@ -2341,7 +2233,6 @@ class LUNTable < CWM::Table
 
 
   def validate
-    puts 'validate() in LUN_table is called.'
     failed_storage = String.new
     p @luns_added
     @luns_added.each do |lun|
@@ -2414,7 +2305,7 @@ class LunNumInput < CWM::IntField
   end
 
   def init
-    #self.value = @config
+    self.value = @config
   end
 
   def store
@@ -2432,8 +2323,6 @@ end
 
 class LUNPathInput < CWM::InputField
   def initialize(str)
-    puts "In initialize, str is :"
-    puts str
     @config = str
   end
 
@@ -2452,7 +2341,7 @@ class LUNPathInput < CWM::InputField
   end
 
   def init
-    #self.value = @config
+    self.value = @config
   end
 
   def store
@@ -2484,7 +2373,7 @@ class LunNameInput < CWM::InputField
   end
 
   def init
-    #self.value = @config
+    self.value = @config
   end
 
   def store
@@ -2561,12 +2450,8 @@ class LUNPathEdit < CWM::CustomWidget
     when :browse
       file = UI.AskForExistingFile('/', '', _('Select a file or device'))
       unless file.nil?
-        # @path = file
-        # @lun_path_input.set_value(file)
         @lun_path_input.set_value(file)
       end
-    #when :ok
-
     end
     nil
   end
@@ -2595,17 +2480,7 @@ class LUNConfig < CWM::CustomWidget
     )
   end
 
-  def store
-    # puts "store is called."
-  end
-
   def validate
-    # puts "validate is called."
-    # printf("lun num is %d.\n", @lun_num_input.get_value)
-    # printf("lun name is %s.\n", @lun_name_input.get_value)
-    # printf("lun path is %s.\n", @lun_path_edit.get_value)
-    #puts "@lun_path_edit.is_valid is :"
-    #puts @lun_path_edit.is_valid
     if @lun_path_edit.is_valid == true
       @lun_info = Array.new
       @lun_info.push(@lun_num_input.get_value)
@@ -2613,10 +2488,6 @@ class LUNConfig < CWM::CustomWidget
       @lun_info.push(@lun_path_edit.get_value)
     end
     true
-  end
-
-  def handle
-    # puts "handle is called."
   end
 
   def get_lun_info
@@ -2632,7 +2503,7 @@ class LUNDetailsWidget < CWM::Dialog
   end
 
   def title
-    'Test Dialog'
+    _("LUN Details")
   end
 
   def wizard_create_dialog
@@ -2688,7 +2559,6 @@ class LUNsTableWidget < CWM::CustomWidget
       @lun_table,
       HBox(
         PushButton(Id(:add), _('Add')),
-        #PushButton(Id(:edit), _('Edit')),
         PushButton(Id(:delete), _('Delete'))
       )
     )
@@ -2713,12 +2583,10 @@ class LUNsTableWidget < CWM::CustomWidget
   end
 
   def validate
-    # puts "Validate() in LunsTableWidget called.\n"
     true
   end
 
   def handle(event)
-    # puts event
     case event['ID']
       when :add
         ret = @lun_details.run
