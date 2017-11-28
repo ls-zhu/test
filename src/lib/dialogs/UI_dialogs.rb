@@ -2119,11 +2119,23 @@ class TargetsTableWidget < CWM::CustomWidget
         info = @edit_target_page.get_target_info()
         create_ACLs_dialog(info)
       when :delete
-        target = @target_table.get_selected
         cmd = 'targetcli'
-        p1 = 'iscsi/ delete ' + target[1]
-        begin
+        target = @target_table.get_selected
+        luns_list = $target_data.get_target_list.fetch_target(target[1]).get_default_tpg.get_luns_list
+        luns_list.each do |key, value|
+          p1 = "backstores/"
+          if value[4] == "file"
+            p1 += "fileio delete " + value[2]
+          end
+          if value[4] == "blockSpecial"
+            p1 += "block delete " + value[2]
+          end
+          puts p1
           Cheetah.run(cmd, p1)
+        end
+        p2 = 'iscsi/ delete ' + target[1]
+        begin
+          Cheetah.run(cmd, p2)
         rescue Cheetah::ExecutionFailed => e
           if e.stderr != nil
             err_msg = _("Failed to delete target: ")
