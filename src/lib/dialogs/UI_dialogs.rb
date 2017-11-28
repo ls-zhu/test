@@ -1024,6 +1024,32 @@ class ACLTable < CWM::Table
     @acls
   end
 
+  def enable_auto_add_mapped_luns
+    cmd = "targetcli"
+    p1 = "set global auto_add_mapped_luns=true"
+    begin
+      Cheetah.run(cmd, p1)
+    rescue Cheetah::ExecutionFailed => e
+      if e.stderr != nil
+        Yast::Popup.Error(e.stderr)
+        # TODO add log
+      end
+    end
+  end
+
+  def disable_auto_add_mapped_luns
+    cmd = "targetcli"
+    p1 = "set global auto_add_mapped_luns=false"
+    begin
+      Cheetah.run(cmd, p1)
+    rescue Cheetah::ExecutionFailed => e
+      if e.stderr != nil
+        Yast::Popup.Error(e.stderr)
+        # TODO add log
+      end
+    end
+  end
+
   def validate
     cmd = "targetcli"
     err_msg = _("Failed to create ACLs witn initiator name: ")
@@ -1039,6 +1065,11 @@ class ACLTable < CWM::Table
 
     @acls_add.each do |elem|
       p1 = "iscsi/" + @target_name + "/tpg" + @tpg_num.to_s + "/acls create " + elem[1]
+      if (elem[0] < 5000)
+        enable_auto_add_mapped_luns()
+      else
+        disable_auto_add_mapped_luns()
+      end
       begin
         Cheetah.run(cmd, p1)
       rescue Cheetah::ExecutionFailed => e
@@ -1047,6 +1078,9 @@ class ACLTable < CWM::Table
           @acls.delete(elem)
           self.change_items(@acls)
         end
+      end
+      if (elem[0] < 5000)
+        disable_auto_add_mapped_luns()
       end
 
       if failed_acls.empty? != true
@@ -1097,14 +1131,14 @@ class InitiatorNameInput < CWM::InputField
   end
 
   def get_value
-    puts "IN get_value(), @config is:", @config
     return @config
   end
 end
 
 class ImportLUNsCheckbox < ::CWM::CheckBox
-  def initialize
+  def initialize(val)
     textdomain "iscsi-lio-server"
+    @config = val
   end
 
   def label
@@ -1112,7 +1146,15 @@ class ImportLUNsCheckbox < ::CWM::CheckBox
   end
 
   def init
-    self.value = true
+    self.value = @config
+  end
+
+  def store
+    @config = self.value
+  end
+
+  def get_value
+    return @config
   end
 
 
@@ -1125,7 +1167,7 @@ class AddAclDialog < CWM::Dialog
   def initialize
     textdomain "iscsi-lio-server"
     @initiator_name_input = InitiatorNameInput.new
-    @import_luns = ImportLUNsCheckbox.new()
+    @import_luns = ImportLUNsCheckbox.new(true)
     @action = ""
   end
 
@@ -1165,7 +1207,9 @@ class AddAclDialog < CWM::Dialog
   def run
     super
     initiator_name = @initiator_name_input.get_value()
-    return initiator_name
+    map_all_luns = @import_luns.get_value
+    info = [initiator_name, map_all_luns]
+    return info
   end
 end
 
@@ -1856,10 +1900,17 @@ class InitiatorACLs < CWM::CustomWidget
   def handle(event)
     case event["ID"]
       when :add
-        initiator_name = @add_acl_dialog.run
+        info = @add_acl_dialog.run
+        initiator_name = info[0]
+        mapped_all_luns = info[1]
         if initiator_name.empty? != true
           item = Array.new()
-          item.push(rand(9999))
+          # item[0] < 5000 means we will map all luns, item[0] > 5000 means we don't map all luns
+          if(mapped_all_luns == true)
+            item.push(rand(0..4999))
+          else
+            item.push(rand(5001..9999))
+          end
           item.push(initiator_name)
           item.push("")
           item.push("None")

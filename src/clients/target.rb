@@ -81,5 +81,6 @@ end
 
 $target_data = TargetData.new
 $global_data = Global.new
+$global_data.execute_init_commands
 $discovery_auth = DiscoveryAuth.new
 Yast::ISCSILioServer.new.run

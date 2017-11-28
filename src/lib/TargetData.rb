@@ -529,6 +529,23 @@ class Global
     @show_del_lun_warning = true
   end
 
+  def execute_init_commands()
+    cmd = "targetcli"
+    commands = [
+        "set global auto_add_mapped_luns=false"
+    ]
+    commands.each do |p1|
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          # TODO add log
+        end
+      end
+    end
+
+  end
+
   def disable_warning_del_lun
     @show_del_lun_warning = false
   end
