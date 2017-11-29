@@ -847,6 +847,12 @@ class TargetPortNumberInput < CWM::IntField
     return self.value
   end
 
+  def set_value(int)
+    self.value = int
+    puts "int is:", int
+    puts "self.value is", self.value
+  end
+
   def minimum
     0
   end
@@ -856,7 +862,6 @@ class IpSelectionComboBox < CWM::ComboBox
   def initialize
     @addr = generate_items
     @config = "0.0.0.0"
-
   end
 
   def label
@@ -1973,7 +1978,7 @@ class AddTargetWidget < CWM::CustomWidget
     @iscsi_name_length_max = 223
     @back_storage = nil
     @target_name = nil
-    @tpg_num = nil
+    @edit_target_tpg = nil
     # @target_info used to return target name, portal number, etc to the caller, in order to create ACLs
     @target_info = Array.new
     # luns contains the luns would be shown in the lun table
@@ -1982,12 +1987,14 @@ class AddTargetWidget < CWM::CustomWidget
     @mode = nil
     time = Time.new
     date_str = time.strftime('%Y-%m')
+    @IP_selsection_box = IpSelectionComboBox.new
+    @target_bind_all_ip_checkbox = BindAllIP.new
+    @target_port_num_field = TargetPortNumberInput.new(3260)
     if target_name == nil
       @mode = 'new'
       @target_name_input_field = TargetNameInput.new('iqn.' + date_str + '.com.example')
       @target_identifier_input_field = TargetIdentifierInput.new(SecureRandom.hex(10))
       @target_portal_group_field = PortalGroupInput.new(1)
-      @target_port_num_field = TargetPortNumberInput.new(3260)
     else
       @mode = 'edit'
       tpg_num = 0
@@ -2013,16 +2020,18 @@ class AddTargetWidget < CWM::CustomWidget
         tpg_num = target.get_default_tpg.fetch_tpg_number
         @tpg_num = tpg_num
       end
+      portals = tpg.fetch_portal
+      ip = portals[0][0]
+      port = portals[0][1]
+      #@target_port_num_field = TargetPortNumberInput.new(portals[0][1].to_i)
+      @target_port_num_field.set_value(123)
       luns = target.get_default_tpg.get_luns_array
       @target_name_input_field = TargetNameInput.new(target_name)
       @target_name = target_name
       @target_identifier_input_field = TargetIdentifierInput.new('')
       @target_portal_group_field = PortalGroupInput.new(tpg_num)
-      @target_port_num_field = TargetPortNumberInput.new(3260)
     end
 
-    @IP_selsection_box = IpSelectionComboBox.new
-    @target_bind_all_ip_checkbox = BindAllIP.new
     @lun_table_widget = LUNsTableWidget.new(luns, target_name, tpg_num)
     if @mode == 'new'
       @use_login_auth = UseLoginAuth.new(false)
@@ -2140,23 +2149,10 @@ class AddTargetWidget < CWM::CustomWidget
       return true
     end
 
-    puts @mode
-
     if @mode == 'edit'
-      puts "In edit!"
       @target_name = @target_name_input_field.get_value
       target_tpg = @target_portal_group_field.value.to_s
       @lun_table_widget.set_target_info(@target_name, target_tpg)
-      p1 = "iscsi/" + @target_name + "/tpg" + target_tpg + "/portals/ ls"
-      p p1
-      begin
-        Cheetah.run(cmd, p1)
-      rescue Cheetah::ExecutionFailed => e
-        puts e.message
-        puts "Standard output: #{e.stdout}"
-        puts "Error ouptut:    #{e.stderr}"
-      end
-
     end
     @target_info.push(@target_name)
     @target_info.push(target_tpg)
