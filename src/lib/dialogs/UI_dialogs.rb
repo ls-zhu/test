@@ -73,6 +73,10 @@ class BindAllIP < ::CWM::CheckBox
   def opt
     [:notify]
   end
+
+  def get_value
+    return self.value
+  end
 end
 
 class UseLoginAuth < ::CWM::CheckBox
@@ -2062,6 +2066,8 @@ class AddTargetWidget < CWM::CustomWidget
   def validate
     portal_addr = @IP_selsection_box.get_addr
     port = @target_port_num_field.get_value.to_s
+    bind_all = @target_bind_all_ip_checkbox.get_value
+    p "bind_all is ", bind_all
     cmd = 'targetcli'
     if @mode == 'new'
       p1 = 'iscsi/ create'
@@ -2111,15 +2117,17 @@ class AddTargetWidget < CWM::CustomWidget
         end
       end
 
+      if bind_all == true
+        portal_addr = "0.0.0.0"
+      end
       p3 = "iscsi/" + @target_name + "/tpg" + target_tpg + "/portals/ create ip_address=" \
            + portal_addr + " ip_port=" + port
-      p p3
       begin
         Cheetah.run(cmd, p3)
       rescue Cheetah::ExecutionFailed => e
         if e.stderr != nil
           err_msg = _("The target is created, but failed to create a portal with selected address and port. ")
-          err_msg += _("Are they alredy used in other targets or other software services?")
+          err_msg += _("Are they alredy in use?")
           err_msg += _(" You can edit the targets again to change that.\n")
           err_msg += e.stderr
           Yast::Popup.Error(err_msg)
