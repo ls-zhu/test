@@ -554,7 +554,8 @@ class Global
   def execute_init_commands()
     cmd = "targetcli"
     commands = [
-        "set global auto_add_mapped_luns=false"
+        "set global auto_add_mapped_luns=false",
+        "set global auto_add_default_portal=false"
     ]
     commands.each do |p1|
       begin

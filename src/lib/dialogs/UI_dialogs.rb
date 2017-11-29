@@ -58,8 +58,9 @@ end
 
 # used to enable / disable 0.0.0.0 IP portal
 class BindAllIP < ::CWM::CheckBox
-  def initialize
+  def initialize(val)
     textdomain "iscsi-lio-server"
+    @config = val
   end
 
   def label
@@ -67,7 +68,7 @@ class BindAllIP < ::CWM::CheckBox
   end
 
   def init
-    self.value = true
+    self.value = @config
   end
 
   def opt
@@ -2006,7 +2007,7 @@ class AddTargetWidget < CWM::CustomWidget
     time = Time.new
     date_str = time.strftime('%Y-%m')
     @IP_selsection_box = IpSelectionComboBox.new
-    @target_bind_all_ip_checkbox = BindAllIP.new
+    @target_bind_all_ip_checkbox = BindAllIP.new(true)
     @target_port_num_field = TargetPortNumberInput.new(3260)
     if target_name == nil
       @mode = 'new'
@@ -2026,6 +2027,9 @@ class AddTargetWidget < CWM::CustomWidget
       portals = tpg.fetch_portal
       ip = portals[0][0]
       port = portals[0][1]
+      if ip != "0.0.0.0"
+        @target_bind_all_ip_checkbox = BindAllIP.new(false)
+      end
       @IP_selsection_box.set_addr(ip)
       @target_port_num_field = TargetPortNumberInput.new(portals[0][1].to_i)
       luns = target.get_default_tpg.get_luns_array
@@ -2079,7 +2083,6 @@ class AddTargetWidget < CWM::CustomWidget
     portal_addr = @IP_selsection_box.get_addr
     port = @target_port_num_field.get_value.to_s
     bind_all = @target_bind_all_ip_checkbox.get_value
-    p "bind_all is ", bind_all
     cmd = 'targetcli'
     if @mode == 'new'
       p1 = 'iscsi/ create'
@@ -2123,18 +2126,19 @@ class AddTargetWidget < CWM::CustomWidget
             err_msg = _('Failed to create Target Portal Group ') + target_tpg \
             + _('The target is create, in the meanwhile, please delete it if needed.') \
             + _('Or a defalut target portal group 1 will be added to the target when you edit it.')
+            err_msg +=("\n Note: 0.0.0.0(Bind all IP address) with a port may conflict with other IPs with the same port")
             Yast::Popup.Error(err_msg)
             return false
           end
         end
       end
 
+      bind_all = @target_bind_all_ip_checkbox.get_value
       if bind_all == true
         portal_addr = "0.0.0.0"
       end
       p3 = "iscsi/" + @target_name + "/tpg" + target_tpg + "/portals/ create ip_address=" \
            + portal_addr + " ip_port=" + port
-      p p3
       begin
         Cheetah.run(cmd, p3)
       rescue Cheetah::ExecutionFailed => e
@@ -2165,7 +2169,10 @@ class AddTargetWidget < CWM::CustomWidget
       orig_port = portals[0][1]
       ip = @IP_selsection_box.get_addr
       port = @target_port_num_field.value
-      p orig_port
+      bind_all = @target_bind_all_ip_checkbox.get_value
+      if bind_all == true
+        ip = "0.0.0.0"
+      end
 
       # if ip or port changed, we need to delete the original portal and create a new one
       if (ip != orig_ip) || (port != orig_port.to_s)
@@ -2174,10 +2181,6 @@ class AddTargetWidget < CWM::CustomWidget
         p2 = "iscsi/" + @target_name + "/tpg" + target_tpg + "/portals/ create ip_address=" \
            + ip + " ip_port=" + port.to_s
         err = ""
-
-        p p1
-        p p2
-=begin
         begin
           Cheetah.run(cmd, p1)
         rescue Cheetah::ExecutionFailed => e
@@ -2198,7 +2201,6 @@ class AddTargetWidget < CWM::CustomWidget
           err_msg = _("Failed to change target portal.\n")
           Yast::Popup.Error(err_msg + err)
         end
-=end
       end
 
     end
