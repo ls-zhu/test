@@ -928,6 +928,23 @@ class IpSelectionComboBox < CWM::ComboBox
     end
   end
 
+  def set_addr(ip)
+    addr_temp = []
+    item_temp = []
+    @addr.each do |item|
+      if item[1] == ip
+        item_temp = item
+        @addr.delete(item)
+      end
+    end
+    addr_temp.push(item_temp)
+    @addr.each do |item|
+      addr_temp.push(item)
+    end
+    @addr = addr_temp
+    self.change_items(@addr)
+  end
+
   def store
 
   end
@@ -1975,6 +1992,7 @@ class AddTargetWidget < CWM::CustomWidget
   def initialize(target_name)
     textdomain "iscsi-lio-server"
     self.handle_all_events = true
+    $target_data.analyze
     @iscsi_name_length_max = 223
     @back_storage = nil
     @target_name = nil
@@ -2001,30 +2019,15 @@ class AddTargetWidget < CWM::CustomWidget
       target_list = $target_data.get_target_list
       target = target_list.fetch_target(target_name)
       tpg = target.get_default_tpg
-      if tpg == nil
-        tpg_num = rand(10)
-        cmd = 'targetcli'
-        p1 = 'iscsi/' + target_name + '/ create tag=' + tpg_num.to_s
-        begin
-          Cheetah.run(cmd, p1)
-        rescue Cheetah::ExecutionFailed => e
-          Yast::Popup.Error(e.stderr) unless e.stderr.nil?
-        end
-        $target_data.analyze
-        target = target_list.fetch_target(target_name)
-        tpg = target.get_default_tpg
-      end
-
-      if tpg != nil
-        target = target_list.fetch_target(target_name)
-        tpg_num = target.get_default_tpg.fetch_tpg_number
-        @tpg_num = tpg_num
-      end
+      target = target_list.fetch_target(target_name)
+      tpg_num = target.get_default_tpg.fetch_tpg_number
+      @tpg_num = tpg_num
+      @target_tgp = tpg
       portals = tpg.fetch_portal
       ip = portals[0][0]
       port = portals[0][1]
-      #@target_port_num_field = TargetPortNumberInput.new(portals[0][1].to_i)
-      @target_port_num_field.set_value(123)
+      @IP_selsection_box.set_addr(ip)
+      @target_port_num_field = TargetPortNumberInput.new(portals[0][1].to_i)
       luns = target.get_default_tpg.get_luns_array
       @target_name_input_field = TargetNameInput.new(target_name)
       @target_name = target_name
@@ -2131,6 +2134,7 @@ class AddTargetWidget < CWM::CustomWidget
       end
       p3 = "iscsi/" + @target_name + "/tpg" + target_tpg + "/portals/ create ip_address=" \
            + portal_addr + " ip_port=" + port
+      p p3
       begin
         Cheetah.run(cmd, p3)
       rescue Cheetah::ExecutionFailed => e
@@ -2153,6 +2157,50 @@ class AddTargetWidget < CWM::CustomWidget
       @target_name = @target_name_input_field.get_value
       target_tpg = @target_portal_group_field.value.to_s
       @lun_table_widget.set_target_info(@target_name, target_tpg)
+      target_list = $target_data.get_target_list
+      target = target_list.fetch_target(@target_name)
+      tpg = target.get_default_tpg
+      portals = tpg.fetch_portal
+      orig_ip = portals[0][0]
+      orig_port = portals[0][1]
+      ip = @IP_selsection_box.get_addr
+      port = @target_port_num_field.value
+      p orig_port
+
+      # if ip or port changed, we need to delete the original portal and create a new one
+      if (ip != orig_ip) || (port != orig_port.to_s)
+        p1 = "iscsi/" + @target_name + "/tpg" + target_tpg + "/portals/ delete ip_address=" \
+           + orig_ip + " ip_port=" + orig_port.to_s
+        p2 = "iscsi/" + @target_name + "/tpg" + target_tpg + "/portals/ create ip_address=" \
+           + ip + " ip_port=" + port.to_s
+        err = ""
+
+        p p1
+        p p2
+=begin
+        begin
+          Cheetah.run(cmd, p1)
+        rescue Cheetah::ExecutionFailed => e
+          if e.stderr != nil
+            err += e.stderr
+          end
+        end
+
+        begin
+          Cheetah.run(cmd, p2)
+        rescue Cheetah::ExecutionFailed => e
+          if e.stderr != nil
+            err += e.stderr
+          end
+        end
+
+        if err.empty? != true
+          err_msg = _("Failed to change target portal.\n")
+          Yast::Popup.Error(err_msg + err)
+        end
+=end
+      end
+
     end
     @target_info.push(@target_name)
     @target_info.push(target_tpg)
@@ -2299,6 +2347,9 @@ class TargetsTableWidget < CWM::CustomWidget
       when :delete
         cmd = 'targetcli'
         target = @target_table.get_selected
+        if target == nil
+          return nil
+        end
         luns_list = $target_data.get_target_list.fetch_target(target[1]).get_default_tpg.get_luns_list
         luns_list.each do |key, value|
           p1 = "backstores/"
