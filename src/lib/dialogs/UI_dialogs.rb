@@ -839,6 +839,10 @@ class TargetPortNumberInput < CWM::IntField
     @config = value
   end
 
+  def get_value
+    return self.value
+  end
+
   def minimum
     0
   end
@@ -846,7 +850,9 @@ end
 
 class IpSelectionComboBox < CWM::ComboBox
   def initialize
-    @addrs = nil
+    @addr = generate_items
+    @config = "0.0.0.0"
+
   end
 
   def label
@@ -889,20 +895,32 @@ class IpSelectionComboBox < CWM::ComboBox
   end
 
   def addresses
-    @addrs = self.GetNetConfig
-    @addrs
+    self.GetNetConfig
+  end
+
+  def generate_items
+    address_array = self.GetNetConfig
+    addr = []
+    address_array.each do |elem|
+      addr.push([rand(9999),elem])
+    end
+    return addr
   end
 
   def items
-    result = []
-    addresses.each_with_index do |a, i|
-      result << [Id(i), a]
-    end
-    result
+    @addr
   end
 
   def get_addr
-    value
+    @addr.each do |item|
+      if item[0] == self.value
+        return item[1]
+      end
+    end
+  end
+
+  def store
+
   end
 
   def opt
@@ -2042,8 +2060,10 @@ class AddTargetWidget < CWM::CustomWidget
   end
 
   def validate
+    portal_addr = @IP_selsection_box.get_addr
+    port = @target_port_num_field.get_value.to_s
+    cmd = 'targetcli'
     if @mode == 'new'
-      cmd = 'targetcli'
       p1 = 'iscsi/ create'
       if @target_name_input_field.get_value.bytesize > @iscsi_name_length_max
         @target_name = @target_name_input_field.get_value
@@ -2090,6 +2110,22 @@ class AddTargetWidget < CWM::CustomWidget
           end
         end
       end
+
+      p3 = "iscsi/" + @target_name + "/tpg" + target_tpg + "/portals/ create ip_address=" \
+           + portal_addr + " ip_port=" + port
+      p p3
+      begin
+        Cheetah.run(cmd, p3)
+      rescue Cheetah::ExecutionFailed => e
+        if e.stderr != nil
+          err_msg = _("The target is created, but failed to create a portal with selected address and port. ")
+          err_msg += _("Are they alredy used in other targets or other software services?")
+          err_msg += _(" You can edit the targets again to change that.\n")
+          err_msg += e.stderr
+          Yast::Popup.Error(err_msg)
+        end
+      end
+
       @lun_table_widget.set_target_info(@target_name, target_tpg)
       @target_info.push(@target_name)
       @target_info.push(target_tpg)
@@ -2104,7 +2140,6 @@ class AddTargetWidget < CWM::CustomWidget
     @target_info.push(@target_name)
     @target_info.push(target_tpg)
     auth = @use_login_auth.value
-    cmd = "targetcli"
     if auth == true
       p1 = "iscsi/" + @target_name + "/tpg" + @tpg_num + "/ set attribute authentication=1 " + \
            " demo_mode_write_protect=1" + " cache_dynamic_acls=0" + " generate_node_acls=0"
