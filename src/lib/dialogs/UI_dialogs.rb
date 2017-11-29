@@ -2140,10 +2140,23 @@ class AddTargetWidget < CWM::CustomWidget
       return true
     end
 
+    puts @mode
+
     if @mode == 'edit'
+      puts "In edit!"
       @target_name = @target_name_input_field.get_value
       target_tpg = @target_portal_group_field.value.to_s
       @lun_table_widget.set_target_info(@target_name, target_tpg)
+      p1 = "iscsi/" + @target_name + "/tpg" + target_tpg + "/portals/ ls"
+      p p1
+      begin
+        Cheetah.run(cmd, p1)
+      rescue Cheetah::ExecutionFailed => e
+        puts e.message
+        puts "Standard output: #{e.stdout}"
+        puts "Error ouptut:    #{e.stderr}"
+      end
+
     end
     @target_info.push(@target_name)
     @target_info.push(target_tpg)

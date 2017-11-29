@@ -143,6 +143,7 @@ class TPG
     @tpg_number = number
     @acls_hash_list = Hash.new
     @luns_list = Hash.new
+    @portals_array = Array.new
   end
 
   def fetch_tpg_number()
@@ -169,6 +170,15 @@ class TPG
 
   def store_lun(lun_num, lun_name)
     @luns_list.store(lun_num, lun_name)
+  end
+
+  # Yast only support one ip port pair now
+  def store_portal(ip, port)
+    @portals_array.push([ip, port])
+  end
+
+  def fetch_portal()
+    return @portals_array
   end
 
   # This function will return a Hast list contain all luns in the TPG
@@ -224,6 +234,7 @@ class TargetList
   @target_hash_list = nil
   def print_list()
     @target_hash_list.each do |key, value|
+      p value
     end
   end
 
@@ -284,7 +295,8 @@ class TargetData
     @re_lun_name = Regexp.new(/\[(fileio|block)\/[\w\_\-\d]+\s/)
     #match lun patch like:(/home/lszhu/target1.raw) or (/dev/sdb)
     @re_lun_path = Regexp.new(/[(]\/(\w|\.|\/)+[)]/)
-
+    # match portal like 0.12.121.121:3260
+    @re_portal = Regexp.new(/(\d{1,3}\.){3}\d{1,3}:\d{1,5}/)
     #iqn_name or eui_name would be a MatchData, but target_name would be a string.
     @iqn_name= nil
     @eui_name= nil
@@ -426,6 +438,16 @@ class TargetData
         lun_path_tmp = @re_lun_path.match(line).to_s
         lun_path = lun_path_tmp[1,lun_path_tmp.length-2]
         @current_tpg.store_lun(lun_num,[rand(9999), lun_num_int, lun_name, lun_path, File.ftype(lun_path)])
+      end
+
+      # handle portals here
+      if @re_portal.match(line)
+        portal_line = @re_portal.match(line).to_s
+        index = portal_line.index(":")
+        ip = portal_line[0,index]
+        port = portal_line[index+1, portal_line.length]
+        # Yast only support one ip port pair now
+        @current_tpg.store_portal(ip, port)
       end
 
     end # end of @target_outout.each do |line|
